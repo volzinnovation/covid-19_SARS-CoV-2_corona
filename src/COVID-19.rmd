@@ -1,0 +1,511 @@
+```{r setup, include=FALSE}
+# README FIRST
+#
+#
+# Install required packages first, by uncommenting the following line...
+# install.packages("forecast,knitr,minpack.lm,rmarkdown,zoo,xts,reshape,plyr,plotly, sicegar, lubridate, knitr, doBy")
+# Import required libraries
+library(forecast)
+library(knitr)
+library(minpack.lm)
+library(rmarkdown)
+library(zoo)
+library(xts)
+library(reshape)
+library(plyr)
+library(plotly)
+library(sicegar)
+library(lubridate)
+library(knitr)
+library(doBy)
+library(bookdown)
+# Set formating of Time to German
+# Sys.setlocale("LC_TIME", "de_DE.UTF-8")
+# Set 3 decimal points
+options(digits = 3)
+# Set no scientific notation
+options(scipen = 999)
+# Use country from build script parameter, or default to German
+country = ifelse(exists("country"),country,"France")
+```
+
+---
+title: "Growth of reported Covid-19 cases in `r country`"
+author: Raphael Volz (raphael.volz@hs-pforzheim.de)
+date: DRAFT work in progress, last updated on `r Sys.Date()`
+output: bookdown::html_document2
+params:
+country: Germany
+---
+
+```{r, echo=FALSE}
+# Load Data from Johns Hopkins Github Repository
+confirmed = read.csv('https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv')
+
+
+# Calculate last date reported and reference dates
+columns = names(confirmed)
+yesterday = columns[length(columns)]
+yesterday = substr(yesterday,2,nchar(yesterday))
+yesterday = as.Date(strptime(yesterday, "%m.%d.%y"))
+today = yesterday+1
+tomorrow = today+1
+oneweek = today+7
+lastweek = today-7
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Transform data to sensible timeseries format
+confirmed_t = melt(confirmed, id=c("Province.State","Country.Region","Lat","Long"))
+names(confirmed_t) = c("State","Country","Lat","Lon","Date","Confirmed") # Proper Col Names
+confirmed_t$Date = as.character(confirmed_t$Date) # To Character
+confirmed_t$Date = substr(confirmed_t$Date,2,nchar(confirmed_t$Date)) # Drop X
+confirmed_t$Date = as.Date(strptime(confirmed_t$Date, "%m.%d.%y")) # To Date
+
+# Select data relevant to country
+DE_ALL = subset(confirmed_t, Country==country )
+# Summarize by regions, where available, e.g. US
+DE = summaryBy(Confirmed ~ Date, data=DE_ALL, FUN = sum)
+# Look only to data when more than 100 confirmed infections are there
+DE = subset(DE, DE$Confirmed > 100)
+# Last known cases
+last_confirmed = DE$Confirmed[nrow(DE)]
+# Create time series
+z = zoo(DE$Confirmed, DE$Date)
+# Deduplicate time series
+z = aggregate(z, index,  tail, 1)
+#
+#
+# Create Gompertz model
+#
+#
+# treat time as a number instead of dates
+time = seq(1,nrow(DE)) 
+# take intensity from confirmed infections
+intensity = DE$Confirmed
+# reverse the time vector for weighting newer data (UNUSED)
+t2 = rev(time)
+# create a small data frame for training
+train = data.frame(time, intensity, t2)
+# Fit model to data iteratvely
+gomp <- nlsLM(intensity ~ a * exp( -b * exp( - c* time ) ),
+                data = train,
+                #weights = wfct(1/t2), # prefer newer data
+                control = list(maxiter = 1024),
+                start = list(a = 41000000, b = 40,c = 0.1),
+                upper = c(a = 1000000000, b = 10000, c = 10 ),
+                lower = c(a = 0, b=1, c=0.0000001) )
+# Make a prediction using the model formula and estimate parameters
+p_gomp = gomp$m$getAllPars()["a"] * exp( - gomp$m$getAllPars()["b"] * exp( - gomp$m$getAllPars()["c"] * time ))
+
+# create comparison week ago model using the data available last week
+DE_weekago = subset(DE, Date <= lastweek)
+
+# Create comparison model using data until last week, see comments above
+time = seq(1, nrow(DE_weekago))
+intensity = DE_weekago$Confirmed
+t2 = rev(time)
+train = data.frame(time, intensity, t2)
+gomp_ago <- nlsLM(intensity ~ a * exp( -b * exp( - c* time ) ), 
+                data = train,
+                #weights = wfct(1/t2),
+                control = list(maxiter = 1024),
+                start = list(a = 30000000, b = 40,c = 0.1),
+                upper = c(a = 82000000, b = 10000, c = 10 ),
+                lower = c(a = 0, b=1, c=0.0000001) )
+time = seq(1,nrow(DE))
+p_gomp_ago = gomp_ago$m$getAllPars()["a"] * exp( - gomp_ago$m$getAllPars()["b"] * exp( - gomp_ago$m$getAllPars()["c"] * time ))
+```
+
+# Daily New Cases
+
+```{r, echo=FALSE}
+# Calculate daily diffs
+z = aggregate(z, index,  tail, 1) # Deduplicate zoo
+delta = diff(z)
+# Determine last delta
+last_delta = coredata(delta)[length(coredata(delta))]
+# Calculate moving average with window of 5 days (as RKI does)
+trend = ma(delta, order = 5, centre = F)
+#
+# Estimate series of R0 values (as RKI does)
+R0 = lag(trend, 4) / trend
+R0_df = data.frame(R0 = coredata(R0))
+R0_df = subset(R0_df, !is.na(R0_df$R0))
+last_R0 = R0_df$R0[nrow(R0_df)]
+#
+# Compute relative increase
+Increase =  (diff(z)/lag(z, 1))*100
+Increase_d = coredata(Increase)
+# Compute last relative increase in percent
+last_increase_percent = round(Increase_d[length(Increase_d)],digits=1)
+# Compute days of doubling infections
+double_days = log(2)/ log ( 1 + last_increase_percent ) *100
+```
+
+According to the Johns Hopkins University global COVID-19 data set [1] a total of `r last_confirmed` COVID-19 cases were reported in `r country` on `r yesterday`. This number of cases increased by `r round(last_increase_percent,digits=1)` percent over the cumulative total cases known one day earlier. At this rate of cases double every `r round(double_days, digits=0)` days and the basic reproduction rate $R_0$ in `r country` can be estimated at `r round(last_R0,digits=1)`, an estimate of the average number of other people infected by a single infected person. Figure \@ref(fig:daily-plot) shows the new cases reported since 100 cases are known in the country (black points) together with a five day moving average (purple line) that smoothes daily fluctuations in the reporting that are due to fewer capacities on weekends, holidays and other reporting mishaps.
+
+```{r daily-plot, fig.cap="new cases and five day moving average.", echo=FALSE}
+# plot daily deltas
+plot(delta,
+#           main=paste0("Daily increase in COVID-19 cases in ", country),
+#           sub=paste ( "Last Data:", today, " Source: [1]" ),
+           ylab="Daily new cases",
+           xlab="Date",
+           type="p")
+# plot week lines
+for (date in index(z)) {
+  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
+    abline(v=as.Date(date, origin="1970-01-01"), col="grey")
+}
+# plot trend line
+lines(trend, col="purple")
+
+```
+
+## Double sigmoidal model for daily new cases
+
+Daily new cases peek after a certain time of growth that follows a sigmoidal function and then recedes to a lower level as the epidemic wave fades out and enters an endemic state. This behavior can be modelled with a double-sigmoid function $f_{base}$, that is obtained by the product of two sigmoidal functions [2].
+
+$$ f_{base}(t) = \frac{1}{ 1+e^{-\alpha_{i} * (t - t_{i})} } * \frac{1}{ 1+e^{-\alpha_{d} * (t - t_{d})} }$$
+
+This function has a maximum $f_{max} = max(f_{base}(t_{max}))$ at $t_{max}$.
+
+The model can obtain predictions related to an observed maximum of daily new cases $I_{max_{d}}$ and an endemic number of daily cases $I_{final_{d}}$ as an asymptote (that is ideally 0). Let $f_{d}(t)$ be a piecewise function that switches between the growth and decay phase at $t_{max}$, such that
+
+$$\begin{aligned}f_{d}(t) = \left\{
+\begin{array}{cc} 
+                \frac{I_{max_{d}}}{f_{max}} * f_{base}(t)  & \hspace{5mm} t \leq t_{max} \\
+                \frac{I_{max_{d}} - I_{final_{d} }}{f_{max}} * f_{base}(t) + I_{final_{d}} & \hspace{5mm} t > t_{max} \\
+\end{array} \right.
+\end{aligned}$$
+
+where $t_{i}$ is the midpoint and $\alpha_{i}$ the slope of the increase of cases and $t_{d}$ is the midpoint and $\alpha_{d}$ is the slope of the decrease in cases. $I_{max_{d}}$ the peak of new cases and $I_{final_{d}}$ the asymptotic final value of new cases at the end of the infections wave. Figure \@ref(fig:daily-model) shows the current _double-sigmoidal model_ that is fitted for the case time series of `r country`.
+
+```{r daily-model, fig.cap="Double sigmoidal model fitted to new cases.", echo=FALSE}
+#
+#
+# Compute double sigmoidal model
+#
+# Compute
+time <- seq(1, length(delta))
+# Names are fixed in sicegar package
+# Train on deltas
+dataInput <- data.frame(intensity = coredata(delta), time = time)
+# Normalize data to 0..1
+normalizedInput <- sicegar::normalizeData(dataInput, dataInputName = "sample001")
+# Find a fit for the double sigmoidal function
+doubleSigmoidalModel <- sicegar::multipleFitFunction(dataInput = normalizedInput,
+                                                     model = "doublesigmoidal",
+                                                     n_runs_min = 20,
+                                                     n_runs_max = 500,
+                                                     showDetails = FALSE)
+# Obtain model parameters
+doubleSigmoidalModel <- sicegar::parameterCalculation(doubleSigmoidalModel)
+# Use the standard rendering (TODO switch to custom plot)
+fig01 <- sicegar::figureModelCurves(dataInput = normalizedInput,
+                                    doubleSigmoidalFitVector = doubleSigmoidalModel,
+                                    showParameterRelatedLines = TRUE)
+# Render figure in document
+print(fig01)
+#
+# Obtain predictions
+#
+# Relate to all available data
+time <- seq(1, nrow(DE))
+# Make prediction using model
+p_dsm <- sicegar::doublesigmoidalFitFormula(time,
+                  finalAsymptoteIntensityRatio = doubleSigmoidalModel$finalAsymptoteIntensityRatio_Estimate,
+                  maximum = doubleSigmoidalModel$maximum_y,
+                  slope1Param = doubleSigmoidalModel$slope1Param_Estimate,
+                  midPoint1Param = doubleSigmoidalModel$midPoint1Param_Estimate,
+                  slope2Param = doubleSigmoidalModel$slope2Param_Estimate,
+                  midPointDistanceParam = doubleSigmoidalModel$midPointDistanceParam_Estimate)
+# Cumulate model prediction to show aside cumulative figures
+dsm_cum = cumsum(p_dsm)
+
+# Create comparison model using data until last week, see comments above
+# Create time series for week old data
+z_ago = zoo(DE_weekago$Confirmed, DE_weekago$Date)
+z_ago = aggregate(z_ago, index, tail, 1) # Deduplicate time series
+delta_ago = diff(z_ago)
+time_ago <- seq(1, length(delta_ago))
+# Names are fixed in sicegar package
+# Train on deltas
+dataInput_ago <- data.frame(intensity = coredata(delta_ago), time = time_ago)
+# Normalize data to 0..1
+normalizedInput_ago <- sicegar::normalizeData(dataInput_ago, dataInputName = "weekago")
+# Find a fit for the double sigmoidal function
+dsm_ago <- sicegar::multipleFitFunction(dataInput = normalizedInput_ago,
+                                                     model = "doublesigmoidal",
+                                                     n_runs_min = 20,
+                                                     n_runs_max = 500,
+                                                     showDetails = FALSE)
+# Obtain model parameters
+dsm_ago <- sicegar::parameterCalculation(dsm_ago)
+```
+
+## Week to week comparison of models
+
+Since the model requires six parameters, it also requires more data points. Hence, it is only feasible to fit this model in later phases of the pandemic (ideally after the peak of daily infections occured) and the model is highly sensitive to new data, particularly with respect to finding the final asymptote $I_{final}$ as the following comparison of the model shows. Nevertheless the model renders interesting characteristica of the past developments.
+
+| Model for Daily Increases         | Current Estimates                                                                                                          | Last Week Estimates                                                                                         | Delta (absolute)                                                                              |
+| :-------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| $I_{max_{d}}$ Peak new cases          | `r round(doubleSigmoidalModel$reachMaximum_y, digits=0)`                                                                   | `r round(dsm_ago$reachMaximum_y, digits=0)`                                                                   | `r round(doubleSigmoidalModel$reachMaximum_y - dsm_ago$reachMaximum_y, digits=0)`             |
+| $I_{final_{d}}$ Endemic new cases          | `r round(doubleSigmoidalModel$endDeclinePoint_y, digits=0)`                                                                | `r round(dsm_ago$endDeclinePoint_y, digits=0)`  | `r round(doubleSigmoidalModel$endDeclinePoint_y - dsm_ago$endDeclinePoint_y, digits=0)`       |
+| $\alpha_{i}$ Slope of increase phase    | `r round(doubleSigmoidalModel$slope1Param_Estimate, digits=2)`                                                             | `r round(dsm_ago$slope1Param_Estimate, digits=2)`                                                             | `r round(doubleSigmoidalModel$slope1Param_Estimate - dsm_ago$slope1Param_Estimate, digits=2)` |
+| $t_{i}$ Midpoint of growth phase   | `r DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1]` (Day `r round(doubleSigmoidalModel$midPoint1_x, digits=0)`) | `r DE$Date[round(dsm_ago$midPoint1_x, digits=0)][1]` (Day `r round(dsm_ago$midPoint1_x, digits=0)`)              | `r round(doubleSigmoidalModel$midPoint1_x - dsm_ago$midPoint1_x, digits=0)`                   |
+| $t_{max}$ Peak day                   | `r DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1]` (Day `r round(doubleSigmoidalModel$maximum_x, digits=0)`)     | `r DE$Date[round(dsm_ago$maximum_x, digits=0)][1]` (Day `r round(dsm_ago$maximum_x, digits=0)`)                  | `r round(doubleSigmoidalModel$maximum_x, digits=0) - round(dsm_ago$maximum_x, digits=0)`      |
+| $\alpha_{d}$ Slope of decay phase       | `r round(doubleSigmoidalModel$slope2Param_Estimate, digits=2)`                                                             | `r round(dsm_ago$slope2Param_Estimate, digits=2)`                                                             | `r round(doubleSigmoidalModel$slope2Param_Estimate - dsm_ago$slope2Param_Estimate, digits=2)` |
+| $t_{d}$ Midpoint of decrease phase | `r DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1]` (Day `r round(doubleSigmoidalModel$midPoint2_x, digits=0)`) | `r DE$Date[round(dsm_ago$midPoint2_x, digits=0)][1]` (Day `r round(dsm_ago$midPoint2_x, digits=0)`)              | `r round(doubleSigmoidalModel$midPoint2_x, digits=0) -round(dsm_ago$midPoint2_x, digits=0)`   |
+
+In order to address the shortcoming of model instability under new data, we can attempt to fit a model on cumulative cases instead.
+
+# Cumulative cases
+
+The cumulative total of COVID-19 cases in `r country` is the number of all COVID-19 cases known up to yesterday and **includes all patients already recovered from the infection**. This corresponds to the _Infected (I)_ number in the standard epidemiological SIR model. Figure \@ref(fig:cumulative-plot) shows the data points of the time series together with a Gompertz model for the cumulative cases (red line) as well as the cumulated double-sigmoidal model (orange line).
+
+```{r cumulative-plot, fig.cap="Cumulative cases with fitted models", echo=FALSE}
+# Plot Infections over Time
+plot(DE$Confirmed ~ DE$Date,
+#     log="y", # Logarithmic Scale
+#     main=paste0("COVID-19 cases in ", country),
+     sub=paste ( "Last Data:", today, " JHU Github repo" ),
+     ylab="Total Cases",
+     xlab="Date"
+     )
+# plot Week Lines
+for (date in DE$Date) {
+  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
+    abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
+}
+
+# plot Gompertz model
+lines(DE$Date, p_gomp, col="red", lwd=2)
+# plot DSM model
+lines(DE$Date, dsm_cum, col="orange", lwd=2)
+# plot cumulative confirmed infections
+points(DE$Date, DE$Confirmed, col="black")
+```
+
+## Gompertz model for cumulative cases
+
+The Gompertz model [3] is a sigmoid model that is often fitted to growth data, and often prefered over the standard logistic model (als called Verhulst model) due its asymetry. The Gompertz can be considered as a special case of the four parameter Richards model and is computationally easier to fit as it has one parameter less. The model is based on the cumulative distribution function $f_{c}(t)$, which is a three parameter logistic function:
+
+$$ f_{c}(t) = I_{max_{c}}  * e^{ - \beta_{c} * e^{ - \alpha_{c} * t }} $$
+
+Where the parameter $I_{max_{c}}$ is the estimated maximum number of cumulative cases (asymptote), $\beta_{c}$ inflects the curve along time, and $\alpha_{c}$ is the maximum absolute growth rate of cumulated cases.
+
+This function is the integral of the probability density function (PDF) developed by Benjamin Gompertz in 1825 to model human mortality, hence his probability densitiy function (PDF) is the derivative of the CDF:
+
+$$\frac{\partial f_{c}(t)}{\partial t} = I_{max_{c}} * \beta_{c} * \alpha_{c} * e^{ - \beta_{c} * e^{ - \alpha_{c} * t } - \alpha_{c} * t} $$
+
+## Week to week comparison of models
+
+The Gompertz model change over time as new data is available. Obviously, we are interested whether the models are reliable and in particular show some convergence. When we compare the current model with the model calculated using the information that was available last week, we can again observe how the model parameters have changed.
+
+| Parameter               | Current Estimate                             | Last Week Estimate                             | Delta (absolute)                                                             |
+| :---------------------- | --------------------------------------------- | ------------------------------------------------- | :--------------------------------------------------------------------------- |
+| $I_{max_{c}}$ Expected maximum | `r round(gomp$m$getAllPars()["a"], digits=0)`                  | `r round(gomp_ago$m$getAllPars()["a"], digits=0)`                  | `r round(gomp$m$getAllPars()["a"], digits=0)  - round(gomp_ago$m$getAllPars()["a"], digits=0)`                |
+| $\alpha_{c}$ Growth rate      | `r gomp$m$getAllPars()["c"]`                  | `r gomp_ago$m$getAllPars()["c"]`                  | `r gomp$m$getAllPars()["c"] - gomp_ago$m$getAllPars()["c"]`                  |
+| $\beta_{c}$ Time shift       | `r round(gomp$m$getAllPars()["b"], digits=0)` | `r round(gomp_ago$m$getAllPars()["b"], digits=0)` | `r round(gomp$m$getAllPars()["b"] - gomp_ago$m$getAllPars()["b"], digits=0)` |
+
+## Parameter convergence of the Gompertz model
+
+Figures \@ref(fig:evol-Imax), @ref(fig:evol-alpha), \@ref(fig:evol-beta) present how the model parameters change over time as new cases are reported.
+
+```{r, echo=FALSE}
+# find first date of infections (over 100 cases)
+min_d = min(DE$Date)
+# create a sequence of dates to create models for
+dates = seq((min_d + 7),( today - 1),"day")
+# create empty models2 dataframe to observe convergence
+models2 = data.frame()
+# iterate over data
+for (date in dates) {
+ # Contine with next date when a fit cannot be found for some reason
+ try({
+  # Subset
+  DE_weekago = subset(DE, Date <= date)
+  # Create time span for the model
+  time = seq(1, nrow(DE_weekago))
+  # reverse time for weighting (UNUSED)
+  t2 = rev(time)
+  # Create intensity of from Confirmed data
+  intensity = DE_weekago$Confirmed
+  # Create training data set
+  train = data.frame(time, intensity, t2)
+  # Fit Gompertz model to training data
+  gomp <- nlsLM(intensity ~ a * exp( -b * exp( - c* time ) ), 
+                data = train,
+                #weights = wfct(1/t2),
+                control = list(maxiter = 1024),
+                start = list(a = 41000000, b = 40,c = 0.1),
+                #weights = wfct(1/intensity^2),
+                upper = c(a = 1000000000, b = 10000, c = 10 ),
+                lower = c(a = 0, b=1, c=0.0000001) )
+  # Create test set
+  DE_test = subset(DE, Date > date)
+  # Create future time sequence for prediction
+  time_t = seq(length(time)+1, length(time)+nrow(DE_test))
+  # Reverse time for weighting (UNUSED)
+  t2_t = rev(time_t)
+   # Assign intensity from Confirmed infections
+  intensity_t = DE_test$Confirmed
+  # Make predictions using Gompertz model
+  p_gomp = gomp$m$getAllPars()["a"] * exp( - gomp$m$getAllPars()["b"] * exp( - gomp$m$getAllPars()["c"] * time_t ))
+  # Calculate Test Set RMSE
+  RMSE_gomp = sqrt(sum((intensity_t- p_gomp)^2)/nrow(DE_test))
+  # Create new record
+  m2 = data.frame(Date=c(date), 
+                  KnownCases=c(DE_weekago$Confirmed[nrow(DE_weekago)]),   
+                  Rows=nrow(DE_weekago),
+                  Maximum=c(gomp$m$getAllPars()["a"]),
+                  B=c(gomp$m$getAllPars()["b"]),
+                  C=c(gomp$m$getAllPars()["c"]),
+                  RMSE_train=c(sqrt( sum ( (DE_weekago$Confirmed - gomp$m$fitted() )^2 ) / nrow(train))),
+                 RMSE_test = c(RMSE_gomp),
+                 pred_delta_abs = c( gomp$m$getAllPars()["a"] * exp( - gomp$m$getAllPars()["b"] * exp( - gomp$m$getAllPars()["c"] * nrow(DE) ))  ))
+  # Add record to models
+  models2  = rbind.fill(models2,m2)
+})
+}
+# Convert Date column to Date type
+models2$Date=as.Date(models2$Date, origin="1970-01-01")
+```
+
+```{r evol-Imax, fig.cap="Parameter evolution of expected maximum (I_max_c)", echo=FALSE}
+# Plot parameter evolution for I_maxs
+plot(models2$Date, models2$Maximum,
+     ylab="Expected maximum",
+     xlab="Model as of Date",
+     type="l",
+     ylim=c(0,max(DE$Confirmed)*4)
+    )
+```
+
+```{r evol-alpha, fig.cap="Parameter evolution of growth rate (alpha_c)", echo=FALSE}
+# Plot parameter evolution for alphae
+plot(models2$Date, models2$C,
+     ylab="Alpha",
+     xlab="Model as of Date",
+     type="l",
+     ylim=c(0,models2$C[nrow(models2)]*4)
+    )
+```
+
+```{r evol-beta, fig.cap="Parameter evolution of time shift (beta_c)", echo=FALSE}
+# Plot parameter evolution for betae
+plot(models2$Date, models2$B,
+     ylab="Beta",
+     xlab="Model as of Date",
+     type="l",
+     ylim=c(0,models2$B[nrow(models2)]*4)
+
+    )
+```
+
+# Projections
+
+## Methodology
+
+Putting in future dates into the current model allows to project future cases. _Note:_ The actual development can differ from model predictions, for example if social distancing norms change or methods in data collection are altered. If such changes happen, a model fitted to the past is no longer valid.
+
+## Nowcast
+
+Yesterday `r DE$Confirmed[nrow(DE)]` COVID-19 cases were known in `r country` [1]. Figure \@ref(fig:nowcast) illustrates how past models (grey line) have predicted the last known number of cumulative COVID-19 cases (dashed black line).
+
+```{r nowcast, fig.cap="Nowcast of past models for yesterday",  echo=FALSE}
+# Create prediction data set from model(s)
+comparison = data.frame(Date = models2$Date, 
+                        actual=DE$Confirmed[nrow(DE)],
+                        gomp=models2$pred_delta_abs)
+# Plot Nowcast
+plot(comparison$Date, comparison$gomp,
+     # main="Past Predictions for Today", 
+     ylab="Cases", 
+     xlab="Model as of Date",
+     type="l",
+     ylim=c(0,DE$Confirmed[nrow(DE)]*1.5),
+     col="grey"
+     )
+# Plot last known confirmed cumulative value (dashed line)
+abline(h=DE$Confirmed[nrow(DE)], lty=2)
+```
+
+```{r, echo=FALSE}
+# Create new data for next week
+Date = seq(today,oneweek, by="days")
+time = seq(nrow(DE)+1,nrow(DE)+8)
+# Gompertz Model
+p_gomp = gomp$m$getAllPars()["a"] * exp( - gomp$m$getAllPars()["b"] * exp( - gomp$m$getAllPars()["c"] * time ))
+# Double sigmoidal model
+# Obtain predictions
+p_dsm <- sicegar::doublesigmoidalFitFormula(time,
+                  finalAsymptoteIntensityRatio = doubleSigmoidalModel$finalAsymptoteIntensityRatio_Estimate,
+                  maximum = doubleSigmoidalModel$maximum_y,
+                  slope1Param = doubleSigmoidalModel$slope1Param_Estimate,
+                  midPoint1Param = doubleSigmoidalModel$midPoint1Param_Estimate,
+                  slope2Param = doubleSigmoidalModel$slope2Param_Estimate,
+                  midPointDistanceParam = doubleSigmoidalModel$midPointDistanceParam_Estimate)
+dsm_cum = cumsum(p_dsm) + max(DE$Confirmed)
+
+# Plot prediction
+#plot( p_gomp ~ Date,
+#     # log="y", # Logarithmic Scale
+#     type="l",
+#     main=paste("7 day Forecast of COVID-19 cases in", country),
+#     sub=paste ( "Forecast on based on JHU data" ),
+#     ylab="COVID-19 cases",
+#     lwd=2,
+#    col="red",
+#xlab="Date",
+#)
+# plot known data points
+#points(DE$Date, DE$Confirmed, col="black")
+```
+
+## Forecast
+
+Using the current model fitted to all available data we can estimate the future number of total COVID-19 cases in the next couple of days using either model or the ensembled mean prediction of both models.
+
+```{r, echo=FALSE}
+# Create prediction data frame with Date and Models
+Prediction = data.frame(Date,
+                        Model_Mean = (p_gomp+dsm_cum)/2,
+                        Gompertz_Model = p_gomp,
+                        DSM_Model = dsm_cum)
+
+# Print result table
+kable(Prediction,
+      digits = c(0,0,0,0),
+      format.args = list(big.mark = ",",scientific = FALSE),
+      caption=paste("Projected COVID-19 Cases in", country))
+```
+
+# Discussion and outlook
+
+Epidemiological models are useful for policy makers, e.g. to assess (lack of) ICU beds, required (additional) restrictions of daily life, etc. However models require (often disputed) assumptions for model parameters. The data-driven approach demonstrated here avoids parameter assumptions and uses past data to fit models that not only describe the past developments but provide reliable forecasts for the nearer future of an epidemic. Next to policy makers, the general public can use the projections to assess their expectations when business or schools might reopen (or reclose).
+
+As a next step the convergence of models could be investigated more closely to assess whether model divergence is an early indicator for a general change in infective behavior. Additional data about the population and population structure could be used to compare between countries, for example to assess the effectiveness of different public policies for controlling the disease.
+
+# References
+
+1.  Johns Hopkins University, _COVID-19 global case time series (csse_covid_19_time_series)_, online https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/ (Last accessed `r Sys.Date()`)
+2.  Mehmet Caglar, Ashley Teufel, Claus Wilke, _Sicegar: R package for sigmoidal and double-sigmoidal curve fitting_ in PeerJ. 2018 Jan 16;6:e4251. doi: 10.7717/peerj.4251. eCollection 2018.
+3.  Benjamin Gompertz, _On the nature of the function expressive of the law of human mortality and a new mode of determining the value of life contingencies_. Philosophical Transactions of the Royal Society of London : Biological Sciences. 1825, 182:5 13-85.
+
+# Appendix
+
+## Cumulative (Gompertz) model history
+
+The following table states the known COVID-19 infections and duration of the epidemic in the country on a given day. It also states all _three parameters_ of the model estimated with data available on that date and reports the root mean square error (RMSE) of the model on the available data RMSE (Training). The information made available after model creation is used as a test of the model precision on unknown data and reported as RMSE (Test). The forecast for today of the given model is also provided together with the relative delta to the actual number reported.
+
+```{r, echo=FALSE}
+# Print result table
+kable(models2,
+      digits = c(0,0,0,0,2,2,0,0,0),
+      format.args = list(big.mark = ",",scientific = FALSE),
+      col.names = c("Date", "# Cases", "# Days", "I_max", "beta", "alpha", "RMSE (Train)", "RMSE (Test)", "Nowcast"))
+
+```
