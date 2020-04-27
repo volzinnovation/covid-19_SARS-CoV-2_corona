@@ -8,7 +8,7 @@ library(bookdown)
 file = "COVID-19.rmd"
 countries = c("Germany","Belgium","Austria","Israel","Italy","Spain","US","Switzerland","Sweden","United Kingdom","France","Denmark","Korea, South")  
 # Load Data from Johns Hopkins Github Repository
-confirmed = read.csv('COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv')
+confirmed = read.csv('https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv')
 # Transform data to sensible timeseries format
 confirmed_t = melt(confirmed, id=c("Province.State","Country.Region","Lat","Long"))
 names(confirmed_t) = c("State","Country","Lat","Lon","Date","Confirmed") # Proper Col Names
@@ -24,7 +24,7 @@ countries = sort(unique(confirmed_t$Country))
 for(country in rev(countries)) {
   try({
     cat(country)
-    render(file, "bookdown::html_document2", paste0("../reports/latest/",country))
+    render(file, "bookdown::html_document2", paste0("../reports/latest/",country,".html"))
     render(file, "bookdown::pdf_document2", paste0("../reports/latest/",country,".pdf"))
     
   })
