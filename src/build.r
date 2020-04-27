@@ -5,6 +5,7 @@ library(reshape)
 library(plyr)
 # install.packages("bookdown")
 library(bookdown)
+library(stringr)
 file = "COVID-19.rmd"
 countries = c("Germany","Belgium","Austria","Israel","Italy","Spain","US","Switzerland","Sweden","United Kingdom","France","Denmark","Korea, South")  
 # Load Data from Johns Hopkins Github Repository
@@ -24,7 +25,7 @@ countries = sort(unique(confirmed_t$Country))
 for(country in (countries)) {
   try({
     cat(country)
-    render(file, "bookdown::html_document2", paste0("../reports/latest/",country,".html"))
+    render(file, "bookdown::html_document2", paste0("../reports/latest/",str_replace(country, " ", ""),".html"))
     # render(file, "bookdown::pdf_document2", paste0("../reports/latest/",country,".pdf"))
     
   })
