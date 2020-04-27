@@ -17,7 +17,7 @@ countries = sort(unique(confirmed_t$Country))
 #
 # START DEBUG WITH ONLY ONE COUNTRY OF CHOICE
 #
-#countries = c("Taiwan*")
+countries = c("Taiwan*")
 #
 # END DEBUG
 #

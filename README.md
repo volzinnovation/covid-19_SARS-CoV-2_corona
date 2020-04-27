@@ -1,20 +1,21 @@
-# covid-19_SARS-CoV-2_corona
+# Global Covid-19 / SARS-CoV-2 / Corona virus Case Projections
 
 ## What is this ?
 An analysis of Covid-19 case time series around the world with projections and forecasts how cases might rise in the week ahead due to the spread of SARS-CoV-2 (Corona) virus infections.
 
 ## How does this work ?
 
-* We use the Johns Hopkins University data set published on Github by the CSSE group.
+* We use the [Johns Hopkins University data set published on Github by the CSSE group](https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/).
 * The published reports are updated daily.
-* Reports are available for most countries in the world (latest report found in reports/latest/ folder)
-* Source code written in R MarkDown is open source (found in src folder)
+* Reports are available for most countries in the world (latest report found in [reports/latest/ folder](https://github.com/volzinnovation/covid-19_SARS-CoV-2_corona/tree/master/reports/latest))
+* [All stastical models are calculated using source code that is open source and open for your inspection](https://github.com/volzinnovation/covid-19_SARS-CoV-2_corona/tree/master/src) and can be run with [free statistical software R](https://www.r-project.org/) on your system of choice.
 
 ## Whom should I contact for questions ?
 
 Please contact Raphael Volz (rv@volzinnovation.com) in case of questions about the analyses.
 
-# Reports at a country level
+# Reports for countries around the world
+
 * [Afghanistan](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/Afghanistan.html)
 * [Albania](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/Albania.html)
 * [Algeria](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/Algeria.html)
