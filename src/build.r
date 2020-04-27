@@ -17,7 +17,7 @@ countries = sort(unique(confirmed_t$Country))
 #
 # START DEBUG WITH ONLY ONE COUNTRY OF CHOICE
 #
-# countries = c("Germany")
+#countries = c("Taiwan*")
 #
 # END DEBUG
 #
@@ -25,7 +25,8 @@ countries = sort(unique(confirmed_t$Country))
 for(country in (countries)) {
   try({
     cat(country)
-    render(file, "bookdown::html_document2", paste0("../reports/latest/",str_replace(country, " ", ""),".html"))
+    render(file, "bookdown::html_document2", paste0("../reports/latest/",
+                                                    str_replace(str_replace(str_replace(str_replace(str_replace(country, " ", ""), " ", ""), "'", ""), "\\*", ""), "US", "USA"),".html)\n"))
     # render(file, "bookdown::pdf_document2", paste0("../reports/latest/",country,".pdf"))
     
   })

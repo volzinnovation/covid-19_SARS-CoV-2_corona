@@ -25,6 +25,6 @@ countries = sort(unique(confirmed_t$Country))
 
 for(country in countries) {
   cat(paste0("* [",country,"](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/",
-             str_replace(str_replace(str_replace(str_replace(str_replace(country, " ", ""), " ", ""), "'", ""), "*", ""), "US", "USA"),".html)\n"))
+             str_replace(str_replace(str_replace(str_replace(str_replace(country, " ", ""), " ", ""), "'", ""), "\\*", ""), "US", "USA"),".html)\n"))
 }
 
