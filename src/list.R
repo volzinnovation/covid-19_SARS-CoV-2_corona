@@ -21,11 +21,7 @@ countries = sort(unique(confirmed_t$Country))
 # END DEBUG
 #
 
-for(country in (countries)) {
-  try({
-    cat(country)
-    render(file, "bookdown::html_document2", paste0("../reports/latest/",country,".html"))
-    # render(file, "bookdown::pdf_document2", paste0("../reports/latest/",country,".pdf"))
-    
-  })
+for(country in countries) {
+  cat(paste0("* [",country,"](./reports/latest/",country,".html)\n"))
 }
+
