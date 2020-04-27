@@ -158,7 +158,7 @@ Please contact Raphael Volz (rv@volzinnovation.com) in case of questions about t
 * [Rwanda](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/Rwanda.html)
 * [Saint Kitts and Nevis](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/SaintKittsandNevis.html)
 * [Saint Lucia](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/SaintLucia.html)
-* [Saint Vincent and the Grenadines](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/SaintVincentandthe Grenadines.html)
+* [Saint Vincent and the Grenadines](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/SaintVincentandtheGrenadines.html)
 * [San Marino](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/SanMarino.html)
 * [Sao Tome and Principe](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/SaoTomeandPrincipe.html)
 * [Saudi Arabia](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/SaudiArabia.html)

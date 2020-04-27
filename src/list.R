@@ -5,7 +5,7 @@ library(reshape)
 library(plyr)
 # install.packages("bookdown")
 library(bookdown)
-install.packages("stringr")
+#install.packages("stringr")
 library(stringr)
 file = "COVID-19.rmd"
 countries = c("Germany","Belgium","Austria","Israel","Italy","Spain","US","Switzerland","Sweden","United Kingdom","France","Denmark","Korea, South")  
@@ -24,7 +24,6 @@ countries = sort(unique(confirmed_t$Country))
 #
 
 for(country in countries) {
-  cat(paste0("* [",country,"](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/",
-             str_replace(str_replace(str_replace(str_replace(str_replace(country, " ", ""), " ", ""), "'", ""), "\\*", ""), "US", "USA"),".html)\n"))
+  filename = str_replace_all(country, c(" "="","\\*"="","US"="USA","'"=""))
+  cat(paste0("* [",country,"](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/",filename,".html)\n"))
 }
-
