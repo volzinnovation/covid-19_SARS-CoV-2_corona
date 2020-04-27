@@ -8,7 +8,7 @@ An analysis of Covid-19 case time series around the world with projections and f
 * We use the [Johns Hopkins University data set published on Github by the CSSE group](https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/).
 * The published reports are updated daily.
 * Reports are available for most countries in the world (latest report found in [reports/latest/ folder](https://github.com/volzinnovation/covid-19_SARS-CoV-2_corona/tree/master/reports/latest))
-* [All stastical models are calculated using source code that is open source and open for your inspection](https://github.com/volzinnovation/covid-19_SARS-CoV-2_corona/tree/master/src) and can be run with [free statistical software R](https://www.r-project.org/) on your system of choice.
+* [All statistical models are calculated using source code that is open source and open for your inspection](https://github.com/volzinnovation/covid-19_SARS-CoV-2_corona/tree/master/src) and can be run with the [free statistical software R](https://www.r-project.org/) on your system of choice.
 
 ## Whom should I contact for questions ?
 
