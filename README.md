@@ -1,6 +1,6 @@
 # covid-19_SARS-CoV-2_corona
 
-# What is this ?
+## What is this ?
 An analysis of Covid-19 case time series around the world with projections and forecasts how cases might rise in the week ahead due to the spread of SARS-CoV-2 (Corona) virus infections.
 
 ## How does this work ?
