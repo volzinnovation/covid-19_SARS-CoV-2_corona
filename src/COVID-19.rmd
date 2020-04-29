@@ -315,7 +315,7 @@ The Gompertz model change over time as new data is available. Obviously, we are 
 Figures \@ref(fig:evol-Imax) - \@ref(fig:evol-beta) present how the model parameters change over time as new cases are reported every day.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
-# find first date of infections (over 100 cases)
+# find first date of infections
 min_d = min(DE$Date)
 # create a sequence of dates to create models for
 dates = seq((min_d + 7),( today - 1),"day")
@@ -525,5 +525,35 @@ kable(models2,
       digits = c(0,0,0,0,2,2,0,0,0),
       format.args = list(big.mark = ",",scientific = FALSE),
       col.names = c("Date", "# Cases", "# Days", "I_max", "beta", "alpha", "RMSE (Train)", "RMSE (Test)", "Nowcast"))
+# Save models into a file
+d = data.frame(
+  date=c(Sys.Date()),
+  day=c(nrow(DE)),
+  country=c(country),
+  first_case_date=c(min_d),
+  cum_cases=c(last_confirmed),
+  new_cases=c(last_delta),
+  alpha_i=c( round(doubleSigmoidalModel$slope1Param_Estimate, digits=2) ),
+  alpha_d=c( round(doubleSigmoidalModel$slope2Param_Estimate, digits=2) ),
+  t_i=c(round(doubleSigmoidalModel$midPoint1_x, digits=0)),
+  t_d=c(round(doubleSigmoidalModel$midPoint2_x, digits=0)),
+  t_max=c( round(doubleSigmoidalModel$maximum_x, digits=0) ),
+  I_max_d=c( round(doubleSigmoidalModel$reachMaximum_y, digits=0) ),
+  I_final_d=c( round(doubleSigmoidalModel$endDeclinePoint_y, digits=0) ),
+  I_max_c=c( round(gomp$m$getAllPars()["a"], digits=0) ),
+  alpha_c=c( gomp$m$getAllPars()["c"] ),
+  beta_c=c(gomp$m$getAllPars()["b"]),
+  nc=c(0),
+  fc_0=c(0),
+  fc_1=c(0),
+  fc_2=c(0),
+  fc_3=c(0),
+  fc_4=c(0),
+  fc_5=c(0),
+  fc_6=c(0),
+  fc_7=c(0),
+  assessment=c(0)  
+)
+write.table(d, file = "../models/history.csv", sep = ",", col.names = F, row.names=F, append = T, qmethod = "double")
 
 ```
