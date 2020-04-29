@@ -66,8 +66,8 @@ confirmed_t$Date = as.Date(strptime(confirmed_t$Date, "%m.%d.%y")) # To Date
 DE_ALL = subset(confirmed_t, Country==country )
 # Summarize by regions, where available, e.g. US
 DE = summaryBy(Confirmed ~ Date, data=DE_ALL, FUN = sum)
-# Look only to data when more than 100 confirmed infections are there
-# DE = subset(DE, DE$Confirmed > 100)
+# Look only to data when some cases are confirmed
+DE = subset(DE, DE$Confirmed > 0)
 # Last known cases
 last_confirmed = DE$Confirmed[nrow(DE)]
 # Create time series
@@ -526,7 +526,7 @@ abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, c
 
 ## Nowcast
 
-Yesterday `r DE$Confirmed[nrow(DE)]` COVID-19 cases were known in `r country` [1]. Figure \@ref(fig:nowcast) illustrates how past Gompertz models (blue line) have predicted the last known number of cumulative COVID-19 cases (dashed black line). `r ifelse(convergent>0, paste0("The vertical dashed blue line indicates that since ",DE$Date[convergent]," (day ",convergent,") all models were at most  ",criteria," percent off the case numbers reported yesterday. Hence, the Gompertz model could predict the development for ", (nrow(DE)-convergent), " days ahead."), "Unfortunately the Gompertz models did not yet converge and cannot provide reliable nowcasts and we must regard all forecasts with great sceptisism.")`
+Yesterday `r DE$Confirmed[nrow(DE)]` COVID-19 cases were known in `r country` [1]. Figure \@ref(fig:nowcast) illustrates how past Gompertz models (blue line) have predicted the last known number of cumulative COVID-19 cases (dashed black line). `r ifelse(convergent>0, paste0("The vertical dashed blue line indicates that since ",DE$Date[convergent]," (day ",convergent,") all models were at most  ",criteria," percent off the case numbers reported yesterday. Hence, the Gompertz model could predict the development for ", (nrow(DE)-convergent), " days ahead."), "Unfortunately the Gompertz models did not yet converge and cannot provide reliable nowcasts and we must regard all forecasts with great scepticism.")`
 
 ```{r, echo=FALSE}
 # Create new data for next week
