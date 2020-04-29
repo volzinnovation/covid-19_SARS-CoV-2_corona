@@ -26,13 +26,13 @@ options(digits = 3)
 # Set no scientific notation
 options(scipen = 999)
 # Use country from build script parameter, or default to German
-country = ifelse(exists("country"),country,"France")
+country = ifelse(exists("country"),country,"Germany")
 ```
 
 ---
 title: "Growth of reported Covid-19 cases in `r country`"
-author: Raphael Volz (raphael.volz@hs-pforzheim.de)
-date: DRAFT work in progress, last updated on `r Sys.Date()`
+author: Raphael Volz (rv@volzinnovation.com)
+date: Last updated on `r Sys.Date()`
 output: bookdown::html_document2
 params:
 country: Germany
@@ -54,7 +54,7 @@ oneweek = today+7
 lastweek = today-7
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
 # Transform data to sensible timeseries format
 confirmed_t = melt(confirmed, id=c("Province.State","Country.Region","Lat","Long"))
 names(confirmed_t) = c("State","Country","Lat","Lon","Date","Confirmed") # Proper Col Names
@@ -67,7 +67,7 @@ DE_ALL = subset(confirmed_t, Country==country )
 # Summarize by regions, where available, e.g. US
 DE = summaryBy(Confirmed ~ Date, data=DE_ALL, FUN = sum)
 # Look only to data when more than 100 confirmed infections are there
-DE = subset(DE, DE$Confirmed > 100)
+# DE = subset(DE, DE$Confirmed > 100)
 # Last known cases
 last_confirmed = DE$Confirmed[nrow(DE)]
 # Create time series
@@ -117,7 +117,7 @@ time = seq(1,nrow(DE))
 p_gomp_ago = gomp_ago$m$getAllPars()["a"] * exp( - gomp_ago$m$getAllPars()["b"] * exp( - gomp_ago$m$getAllPars()["c"] * time ))
 ```
 
-# Daily New Cases
+# New Cases
 
 ```{r, echo=FALSE}
 # Calculate daily diffs
@@ -143,14 +143,14 @@ last_increase_percent = round(Increase_d[length(Increase_d)],digits=1)
 double_days = log(2)/ log ( 1 + last_increase_percent ) *100
 ```
 
-According to the Johns Hopkins University global COVID-19 data set [1] a total of `r last_confirmed` COVID-19 cases were reported in `r country` on `r yesterday`. This number of cases increased by `r round(last_increase_percent,digits=1)` percent over the cumulative total cases known one day earlier. At this rate of cases double every `r round(double_days, digits=0)` days and the basic reproduction rate $R_0$ in `r country` can be estimated at `r round(last_R0,digits=1)`, an estimate of the average number of other people infected by a single infected person. Figure \@ref(fig:daily-plot) shows the new cases reported since 100 cases are known in the country (black points) together with a five day moving average (purple line) that smoothes daily fluctuations in the reporting that are due to fewer capacities on weekends, holidays and other reporting mishaps.
+According to the Johns Hopkins University global COVID-19 data set [1] a total of `r last_confirmed` COVID-19 cases were reported in `r country` on `r yesterday`. This number of cases increased by `r round(last_increase_percent,digits=1)` percent over the cumulative total cases known one day earlier. At this rate of cases double every `r round(double_days, digits=0)` days and the basic reproduction rate $R_0$ in `r country` can be estimated at `r round(last_R0,digits=1)`, an estimate of the average number of other people infected by a single infected person. Figure \@ref(fig:daily-plot) shows the time line of new cases reported in the country (black points) together with a five day moving average (purple line) that smoothes daily fluctuations in the reporting that are due to fewer capacities on weekends, holidays and other reporting mishaps.
 
-```{r daily-plot, fig.cap="new cases and five day moving average.", echo=FALSE}
+```{r daily-plot, fig.cap="New cases and five day moving average.", echo=FALSE}
 # plot daily deltas
 plot(delta,
 #           main=paste0("Daily increase in COVID-19 cases in ", country),
 #           sub=paste ( "Last Data:", today, " Source: [1]" ),
-           ylab="Daily new cases",
+           ylab="New cases",
            xlab="Date",
            type="p")
 # plot week lines
@@ -163,15 +163,15 @@ lines(trend, col="purple")
 
 ```
 
-## Double sigmoidal model for daily new cases
+## Double sigmoidal model (DSM) for new cases
 
-Daily new cases peek after a certain time of growth that follows a sigmoidal function and then recedes to a lower level as the epidemic wave fades out and enters an endemic state. This behavior can be modelled with a double-sigmoid function $f_{base}$, that is obtained by the product of two sigmoidal functions [2].
+New cases peek after a certain time of growth that follows a sigmoidal function and then recedes to a lower level as the epidemic wave fades out and enters an endemic state. This behavior can be modelled with a double-sigmoid function $f_{base}$, that is obtained by the product of two sigmoidal functions [2].
 
 $$ f_{base}(t) = \frac{1}{ 1+e^{-\alpha_{i} * (t - t_{i})} } * \frac{1}{ 1+e^{-\alpha_{d} * (t - t_{d})} }$$
 
 This function has a maximum $f_{max} = max(f_{base}(t_{max}))$ at $t_{max}$.
 
-The model can obtain predictions related to an observed maximum of daily new cases $I_{max_{d}}$ and an endemic number of daily cases $I_{final_{d}}$ as an asymptote (that is ideally 0). Let $f_{d}(t)$ be a piecewise function that switches between the growth and decay phase at $t_{max}$, such that
+The model can obtain predictions related to an observed maximum of new cases $I_{max_{d}}$ and an endemic number of daily cases $I_{final_{d}}$ as an asymptote (that is ideally 0). Let $f_{d}(t)$ be a piecewise function that switches between the growth and decay phase at $t_{max}$, such that
 
 $$\begin{aligned}f_{d}(t) = \left\{
 \begin{array}{cc} 
@@ -182,7 +182,7 @@ $$\begin{aligned}f_{d}(t) = \left\{
 
 where $t_{i}$ is the midpoint and $\alpha_{i}$ the slope of the increase of cases and $t_{d}$ is the midpoint and $\alpha_{d}$ is the slope of the decrease in cases. $I_{max_{d}}$ the peak of new cases and $I_{final_{d}}$ the asymptotic final value of new cases at the end of the infections wave. Figure \@ref(fig:daily-model) shows the current _double-sigmoidal model_ that is fitted for the case time series of `r country`.
 
-```{r daily-model, fig.cap="Double sigmoidal model fitted to new cases.", echo=FALSE}
+```{r daily-model, fig.cap="Double sigmoidal model (DSM) for new cases.", echo=FALSE}
 #
 #
 # Compute double sigmoidal model
@@ -245,11 +245,11 @@ dsm_ago <- sicegar::multipleFitFunction(dataInput = normalizedInput_ago,
 dsm_ago <- sicegar::parameterCalculation(dsm_ago)
 ```
 
-## Week to week comparison of models
+## Week to week comparison of DSM models
 
 Since the model requires six parameters, it also requires more data points. Hence, it is only feasible to fit this model in later phases of the pandemic (ideally after the peak of daily infections occured) and the model is highly sensitive to new data, particularly with respect to finding the final asymptote $I_{final}$ as the following comparison of the model shows. Nevertheless the model renders interesting characteristica of the past developments.
 
-| Model for Daily Increases         | Current Estimates                                                                                                          | Last Week Estimates                                                                                         | Delta (absolute)                                                                              |
+| Model for Daily Increases         | Current Estimate                                                                                                          | Last Week Estimate                                                                                         | Delta (absolute)                                                                              |
 | :-------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | $I_{max_{d}}$ Peak new cases          | `r round(doubleSigmoidalModel$reachMaximum_y, digits=0)`                                                                   | `r round(dsm_ago$reachMaximum_y, digits=0)`                                                                   | `r round(doubleSigmoidalModel$reachMaximum_y - dsm_ago$reachMaximum_y, digits=0)`             |
 | $I_{final_{d}}$ Endemic new cases          | `r round(doubleSigmoidalModel$endDeclinePoint_y, digits=0)`                                                                | `r round(dsm_ago$endDeclinePoint_y, digits=0)`  | `r round(doubleSigmoidalModel$endDeclinePoint_y - dsm_ago$endDeclinePoint_y, digits=0)`       |
@@ -265,7 +265,7 @@ In order to address the shortcoming of model instability under new data, we can 
 
 The cumulative total of COVID-19 cases in `r country` is the number of all COVID-19 cases known up to yesterday and **includes all patients already recovered from the infection**. This corresponds to the _Infected (I)_ number in the standard epidemiological SIR model. Figure \@ref(fig:cumulative-plot) shows the data points of the time series together with a Gompertz model for the cumulative cases (red line) as well as the cumulated double-sigmoidal model (orange line).
 
-```{r cumulative-plot, fig.cap="Cumulative cases with fitted models", echo=FALSE}
+```{r cumulative-plot, fig.cap="Cumulative cases with DSM and Gompertz models", echo=FALSE}
 # Plot Infections over Time
 plot(DE$Confirmed ~ DE$Date,
 #     log="y", # Logarithmic Scale
@@ -300,21 +300,21 @@ This function is the integral of the probability density function (PDF) develope
 
 $$\frac{\partial f_{c}(t)}{\partial t} = I_{max_{c}} * \beta_{c} * \alpha_{c} * e^{ - \beta_{c} * e^{ - \alpha_{c} * t } - \alpha_{c} * t} $$
 
-## Week to week comparison of models
+## Week to week comparison of Gompertz models
 
 The Gompertz model change over time as new data is available. Obviously, we are interested whether the models are reliable and in particular show some convergence. When we compare the current model with the model calculated using the information that was available last week, we can again observe how the model parameters have changed.
 
 | Parameter               | Current Estimate                             | Last Week Estimate                             | Delta (absolute)                                                             |
 | :---------------------- | --------------------------------------------- | ------------------------------------------------- | :--------------------------------------------------------------------------- |
-| $I_{max_{c}}$ Expected maximum | `r round(gomp$m$getAllPars()["a"], digits=0)`                  | `r round(gomp_ago$m$getAllPars()["a"], digits=0)`                  | `r round(gomp$m$getAllPars()["a"], digits=0)  - round(gomp_ago$m$getAllPars()["a"], digits=0)`                |
+| $I_{max_{c}}$ Total number of cases | `r round(gomp$m$getAllPars()["a"], digits=0)`                  | `r round(gomp_ago$m$getAllPars()["a"], digits=0)`                  | `r round(gomp$m$getAllPars()["a"], digits=0)  - round(gomp_ago$m$getAllPars()["a"], digits=0)`                |
 | $\alpha_{c}$ Growth rate      | `r gomp$m$getAllPars()["c"]`                  | `r gomp_ago$m$getAllPars()["c"]`                  | `r gomp$m$getAllPars()["c"] - gomp_ago$m$getAllPars()["c"]`                  |
 | $\beta_{c}$ Time shift       | `r round(gomp$m$getAllPars()["b"], digits=0)` | `r round(gomp_ago$m$getAllPars()["b"], digits=0)` | `r round(gomp$m$getAllPars()["b"] - gomp_ago$m$getAllPars()["b"], digits=0)` |
 
 ## Parameter convergence of the Gompertz model
 
-Figures \@ref(fig:evol-Imax), @ref(fig:evol-alpha), \@ref(fig:evol-beta) present how the model parameters change over time as new cases are reported.
+Figures \@ref(fig:evol-Imax) - \@ref(fig:evol-beta) present how the model parameters change over time as new cases are reported every day.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
 # find first date of infections (over 100 cases)
 min_d = min(DE$Date)
 # create a sequence of dates to create models for
@@ -409,7 +409,7 @@ plot(models2$Date, models2$B,
 
 ## Methodology
 
-Putting in future dates into the current model allows to project future cases. _Note:_ The actual development can differ from model predictions, for example if social distancing norms change or methods in data collection are altered. If such changes happen, a model fitted to the past is no longer valid.
+Putting in future dates into the current models allows to project future cases. _Note:_ The actual development can differ from model predictions, for example if social distancing norms change or methods in data collection are altered. If such changes happen, a model fitted to the past is no longer valid.
 
 ## Nowcast
 
@@ -467,9 +467,9 @@ dsm_cum = cumsum(p_dsm) + max(DE$Confirmed)
 
 ## Forecast
 
-Using the current model fitted to all available data we can estimate the future number of total COVID-19 cases in the next couple of days using either model or the ensembled mean prediction of both models.
+Table \@ref(tab:forecast) presents the predicted number of total COVID-19 cases for the upcoming week that are predicted using our models.
 
-```{r, echo=FALSE}
+```{r forecast, echo=FALSE}
 # Create prediction data frame with Date and Models
 Prediction = data.frame(Date,
                         Model_Mean = (p_gomp+dsm_cum)/2,
@@ -480,7 +480,8 @@ Prediction = data.frame(Date,
 kable(Prediction,
       digits = c(0,0,0,0),
       format.args = list(big.mark = ",",scientific = FALSE),
-      caption=paste("Projected COVID-19 Cases in", country))
+      caption=paste("Projected COVID-19 Cases in", country),
+     col.names = c("Date", "Model Mean", "Gompertz Model", "DSM Model"))
 ```
 
 # Discussion and outlook
@@ -499,7 +500,7 @@ As a next step the convergence of models could be investigated more closely to a
 
 ## Cumulative (Gompertz) model history
 
-The following table states the known COVID-19 infections and duration of the epidemic in the country on a given day. It also states all _three parameters_ of the model estimated with data available on that date and reports the root mean square error (RMSE) of the model on the available data RMSE (Training). The information made available after model creation is used as a test of the model precision on unknown data and reported as RMSE (Test). The forecast for today of the given model is also provided together with the relative delta to the actual number reported.
+The following table states the known COVID-19 infections and duration of the pandemic in `r country` on a given day. It also states all _three parameters_ of the model estimated with data available on that date and reports the root mean square error (RMSE) of the model on the available data RMSE (Training). The information made available after model creation is used as a test of the model precision on unknown data and reported as RMSE (Test). The forecast of the given model for yesterday is provided in the last column.
 
 ```{r, echo=FALSE}
 # Print result table
