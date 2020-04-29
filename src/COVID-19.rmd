@@ -253,11 +253,11 @@ Since the model requires six parameters, it also requires more data points. Henc
 | :-------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | $I_{max_{d}}$ Peak new cases          | `r round(doubleSigmoidalModel$reachMaximum_y, digits=0)`                                                                   | `r round(dsm_ago$reachMaximum_y, digits=0)`                                                                   | `r round(doubleSigmoidalModel$reachMaximum_y - dsm_ago$reachMaximum_y, digits=0)`             |
 | $I_{final_{d}}$ Endemic new cases          | `r round(doubleSigmoidalModel$endDeclinePoint_y, digits=0)`                                                                | `r round(dsm_ago$endDeclinePoint_y, digits=0)`  | `r round(doubleSigmoidalModel$endDeclinePoint_y - dsm_ago$endDeclinePoint_y, digits=0)`       |
-| $\alpha_{i}$ Slope of increase phase    | `r round(doubleSigmoidalModel$slope1Param_Estimate, digits=2)`                                                             | `r round(dsm_ago$slope1Param_Estimate, digits=2)`                                                             | `r round(doubleSigmoidalModel$slope1Param_Estimate - dsm_ago$slope1Param_Estimate, digits=2)` |
+| $\alpha_{i}$ Slope of growth phase    | `r round(doubleSigmoidalModel$slope1Param_Estimate, digits=2)`                                                             | `r round(dsm_ago$slope1Param_Estimate, digits=2)`                                                             | `r round(doubleSigmoidalModel$slope1Param_Estimate - dsm_ago$slope1Param_Estimate, digits=2)` |
 | $t_{i}$ Midpoint of growth phase   | `r DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1]` (Day `r round(doubleSigmoidalModel$midPoint1_x, digits=0)`) | `r DE$Date[round(dsm_ago$midPoint1_x, digits=0)][1]` (Day `r round(dsm_ago$midPoint1_x, digits=0)`)              | `r round(doubleSigmoidalModel$midPoint1_x - dsm_ago$midPoint1_x, digits=0)`                   |
 | $t_{max}$ Peak day                   | `r DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1]` (Day `r round(doubleSigmoidalModel$maximum_x, digits=0)`)     | `r DE$Date[round(dsm_ago$maximum_x, digits=0)][1]` (Day `r round(dsm_ago$maximum_x, digits=0)`)                  | `r round(doubleSigmoidalModel$maximum_x, digits=0) - round(dsm_ago$maximum_x, digits=0)`      |
 | $\alpha_{d}$ Slope of decay phase       | `r round(doubleSigmoidalModel$slope2Param_Estimate, digits=2)`                                                             | `r round(dsm_ago$slope2Param_Estimate, digits=2)`                                                             | `r round(doubleSigmoidalModel$slope2Param_Estimate - dsm_ago$slope2Param_Estimate, digits=2)` |
-| $t_{d}$ Midpoint of decrease phase | `r DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1]` (Day `r round(doubleSigmoidalModel$midPoint2_x, digits=0)`) | `r DE$Date[round(dsm_ago$midPoint2_x, digits=0)][1]` (Day `r round(dsm_ago$midPoint2_x, digits=0)`)              | `r round(doubleSigmoidalModel$midPoint2_x, digits=0) -round(dsm_ago$midPoint2_x, digits=0)`   |
+| $t_{d}$ Midpoint of decay phase | `r DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1]` (Day `r round(doubleSigmoidalModel$midPoint2_x, digits=0)`) | `r DE$Date[round(dsm_ago$midPoint2_x, digits=0)][1]` (Day `r round(dsm_ago$midPoint2_x, digits=0)`)              | `r round(doubleSigmoidalModel$midPoint2_x, digits=0) -round(dsm_ago$midPoint2_x, digits=0)`   |
 
 In order to address the shortcoming of model instability under new data, we can attempt to fit a model on cumulative cases instead.
 
@@ -382,6 +382,10 @@ plot(models2$Date, models2$Maximum,
      type="l",
      ylim=c(0,max(DE$Confirmed)*4)
     )
+# Add lines for key dates from DSM model
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], col="red")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lwd=2, col="red")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], col="red")
 ```
 
 ```{r evol-alpha, fig.cap="Parameter evolution of growth rate (alpha_c)", echo=FALSE}
@@ -392,6 +396,10 @@ plot(models2$Date, models2$C,
      type="l",
      ylim=c(0,models2$C[nrow(models2)]*4)
     )
+# Add lines for key dates from DSM model
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], col="red")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lwd=2, col="red")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], col="red")
 ```
 
 ```{r evol-beta, fig.cap="Parameter evolution of time shift (beta_c)", echo=FALSE}
@@ -403,6 +411,10 @@ plot(models2$Date, models2$B,
      ylim=c(0,models2$B[nrow(models2)]*4)
 
     )
+# Add lines for key dates from DSM model
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], col="red")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lwd=2, col="red")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], col="red")
 ```
 
 # Projections
@@ -431,6 +443,11 @@ plot(comparison$Date, comparison$gomp,
      )
 # Plot last known confirmed cumulative value (dashed line)
 abline(h=DE$Confirmed[nrow(DE)], lty=2)
+# Add lines for key dates from DSM model
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], col="red")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lwd=2, col="red")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], col="red")
+
 ```
 
 ```{r, echo=FALSE}
