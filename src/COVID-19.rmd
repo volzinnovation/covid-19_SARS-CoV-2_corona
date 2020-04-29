@@ -180,7 +180,7 @@ $$\begin{aligned}f_{d}(t) = \left\{
 \end{array} \right.
 \end{aligned}$$
 
-where $t_{i}$ is the midpoint and $\alpha_{i}$ the slope of the increase of cases and $t_{d}$ is the midpoint and $\alpha_{d}$ is the slope of the decrease in cases. $I_{max_{d}}$ the peak of new cases and $I_{final_{d}}$ the asymptotic final value of new cases at the end of the infections wave. Figure \@ref(fig:daily-model) shows the current _double-sigmoidal model_ that is fitted for the case time series of `r country`.
+where $t_{i}$ is the midpoint and $\alpha_{i}$ the slope of the increase of cases and $t_{d}$ is the midpoint and $\alpha_{d}$ is the slope of the decrease in cases. $I_{max_{d}}$ the peak of new cases and $I_{final_{d}}$ the asymptotic final value of new cases at the end of the infections wave. Figure \@ref(fig:daily-model) shows the current _double-sigmoidal model_ ( orange line) that is fitted for the new case time series of `r country`, where the vertical dashed line highlights the midpoint $t_i$ of the growth phase, the vertical solid line indicates the peak of new infections $t_max$ and the vertical dotted line the midpoint $t_d$ of the decay phase. The dashed horizontal line marks the estimated asymptote of endemic new cases $I_{final_{d}}$ as this infection wave ends. 
 
 ```{r daily-model, fig.cap="Double sigmoidal model (DSM) for new cases.", echo=FALSE}
 #
@@ -203,11 +203,11 @@ doubleSigmoidalModel <- sicegar::multipleFitFunction(dataInput = normalizedInput
 # Obtain model parameters
 doubleSigmoidalModel <- sicegar::parameterCalculation(doubleSigmoidalModel)
 # Use the standard rendering (TODO switch to custom plot)
-fig01 <- sicegar::figureModelCurves(dataInput = normalizedInput,
-                                    doubleSigmoidalFitVector = doubleSigmoidalModel,
-                                    showParameterRelatedLines = TRUE)
+#fig01 <- sicegar::figureModelCurves(dataInput = normalizedInput,
+#                                    doubleSigmoidalFitVector = doubleSigmoidalModel,
+#                                    showParameterRelatedLines = TRUE)
 # Render figure in document
-print(fig01)
+#print(fig01)
 #
 # Obtain predictions
 #
@@ -221,6 +221,23 @@ p_dsm <- sicegar::doublesigmoidalFitFormula(time,
                   midPoint1Param = doubleSigmoidalModel$midPoint1Param_Estimate,
                   slope2Param = doubleSigmoidalModel$slope2Param_Estimate,
                   midPointDistanceParam = doubleSigmoidalModel$midPointDistanceParam_Estimate)
+
+# Plot model preditions
+plot(DE$Date,p_dsm, type="l", col="orange", lwd=2, ylab="Double Sigmoidal model", xlab="Date")
+# plot Week Lines
+for (date in DE$Date) {
+  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
+    abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
+}
+# Add lines for key dates from DSM model
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
+# add asymptote I_final_d
+abline(h=doubleSigmoidalModel$endDeclinePoint_y, lty=2, lwd=2, col="orange")
+# add points for reported data
+points(DE$Date[seq(2,nrow(DE))],coredata(delta))
+
 # Cumulate model prediction to show aside cumulative figures
 dsm_cum = cumsum(p_dsm)
 
@@ -243,11 +260,19 @@ dsm_ago <- sicegar::multipleFitFunction(dataInput = normalizedInput_ago,
                                                      showDetails = FALSE)
 # Obtain model parameters
 dsm_ago <- sicegar::parameterCalculation(dsm_ago)
+# Assign values to variables (should have done that much earlier, TODO update uses to those names)
+t_d = round(doubleSigmoidalModel$midPoint2_x, digits=0)
+t_i = round(doubleSigmoidalModel$midPoint1_x, digits=0)
+t_max = round(doubleSigmoidalModel$maximum_x, digits=0)
+I_max_c = gomp$m$getAllPars()["a"]
+I_max_dsm = dsm_cum[ t_max ] + 2 * ( dsm_cum[t_d] - dsm_cum[ t_max ] ) # not really fixed asymptote
+I_final_d = round(doubleSigmoidalModel$endDeclinePoint_y, digits=0)
+
 ```
 
 ## Week to week comparison of DSM models
 
-Since the model requires six parameters, it also requires more data points. Hence, it is only feasible to fit this model in later phases of the pandemic (ideally after the peak of daily infections occured) and the model is highly sensitive to new data, particularly with respect to finding the final asymptote $I_{final}$ as the following comparison of the model shows. Nevertheless the model renders interesting characteristica of the past developments.
+Since the model requires six parameters, it also requires more data points. Hence, it is only feasible to fit this model in later phases of the pandemic (ideally after the peak of daily infections occured) and the model is highly sensitive to new data, particularly with respect to finding the final asymptote$I_{final_{d}}$as the following comparison of the model shows. Nevertheless the model renders interesting characteristica of the past developments.
 
 | Model for Daily Increases         | Current Estimate                                                                                                          | Last Week Estimate                                                                                         | Delta (absolute)                                                                              |
 | :-------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -263,7 +288,9 @@ In order to address the shortcoming of model instability under new data, we can 
 
 # Cumulative cases
 
-The cumulative total of COVID-19 cases in `r country` is the number of all COVID-19 cases known up to yesterday and **includes all patients already recovered from the infection**. This corresponds to the _Infected (I)_ number in the standard epidemiological SIR model. Figure \@ref(fig:cumulative-plot) shows the data points of the time series together with a Gompertz model for the cumulative cases (red line) as well as the cumulated double-sigmoidal model (orange line).
+The cumulative total of COVID-19 cases in `r country` is the number of all COVID-19 cases known up to yesterday and **includes all patients already recovered from the infection**. This corresponds to the _Infected (I)_ number in the standard epidemiological SIR model. Figure \@ref(fig:cumulative-plot) shows the data points of the time series together with a Gompertz model for the cumulative cases (red line) as well as the cumulated double-sigmoidal model (orange line). The dashed horizontal lines show the expected maximum number of cases of the respective models.
+
+`r ifelse(I_final_d>10,paste0(" _Note:_ The cumulated double-sigmoidal model does not have an asymptote, since $I_{final_{d}}$ is not zero, the line can be considered as the number of infections when the infective wave ends and the endemic state starts. According to the DSM this happens when a total ", round(I_max_dsm, digits=0), " cases are reached."),"" )`
 
 ```{r cumulative-plot, fig.cap="Cumulative cases with DSM and Gompertz models", echo=FALSE}
 # Plot Infections over Time
@@ -272,20 +299,28 @@ plot(DE$Confirmed ~ DE$Date,
 #     main=paste0("COVID-19 cases in ", country),
      sub=paste ( "Last Data:", today, " JHU Github repo" ),
      ylab="Total Cases",
-     xlab="Date"
+     xlab="Date",
+     ylim=c(0,ifelse(I_max_c >= I_max_dsm, I_max_c, I_max_dsm)+100)
      )
 # plot Week Lines
 for (date in DE$Date) {
   if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
     abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
 }
-
+# Add lines for key dates from DSM model
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
 # plot Gompertz model
 lines(DE$Date, p_gomp, col="red", lwd=2)
 # plot DSM model
 lines(DE$Date, dsm_cum, col="orange", lwd=2)
 # plot cumulative confirmed infections
 points(DE$Date, DE$Confirmed, col="black")
+# add asymptotes I_max
+abline(h=I_max_c, lty=2, lwd=2, col="red")
+abline(h=I_max_dsm, lty=2, lwd=2, col="orange")
+
 ```
 
 ## Gompertz model for cumulative cases
@@ -382,10 +417,15 @@ plot(models2$Date, models2$Maximum,
      type="l",
      ylim=c(0,max(DE$Confirmed)*4)
     )
+# plot Week Lines
+for (date in DE$Date) {
+  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
+    abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
+}
 # Add lines for key dates from DSM model
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], col="red")
-abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lwd=2, col="red")
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], col="red")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
 ```
 
 ```{r evol-alpha, fig.cap="Parameter evolution of growth rate (alpha_c)", echo=FALSE}
@@ -396,10 +436,15 @@ plot(models2$Date, models2$C,
      type="l",
      ylim=c(0,models2$C[nrow(models2)]*4)
     )
+# plot Week Lines
+for (date in DE$Date) {
+  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
+    abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
+}
 # Add lines for key dates from DSM model
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], col="red")
-abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lwd=2, col="red")
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], col="red")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
 ```
 
 ```{r evol-beta, fig.cap="Parameter evolution of time shift (beta_c)", echo=FALSE}
@@ -411,10 +456,15 @@ plot(models2$Date, models2$B,
      ylim=c(0,models2$B[nrow(models2)]*4)
 
     )
+# plot Week Lines
+for (date in DE$Date) {
+  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
+    abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
+}
 # Add lines for key dates from DSM model
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], col="red")
-abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lwd=2, col="red")
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], col="red")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
 ```
 
 # Projections
@@ -423,15 +473,27 @@ abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], col="red
 
 Putting in future dates into the current models allows to project future cases. _Note:_ The actual development can differ from model predictions, for example if social distancing norms change or methods in data collection are altered. If such changes happen, a model fitted to the past is no longer valid.
 
-## Nowcast
-
-Yesterday `r DE$Confirmed[nrow(DE)]` COVID-19 cases were known in `r country` [1]. Figure \@ref(fig:nowcast) illustrates how past models (grey line) have predicted the last known number of cumulative COVID-19 cases (dashed black line).
 
 ```{r nowcast, fig.cap="Nowcast of past models for yesterday",  echo=FALSE}
 # Create prediction data set from model(s)
 comparison = data.frame(Date = models2$Date, 
                         actual=DE$Confirmed[nrow(DE)],
                         gomp=models2$pred_delta_abs)
+# Check convergence
+convergent = 0 # 0 means did not yet converge
+stop = F
+criteria = 2 # nowcast should be maximum 2% off the real value
+# search backwards
+for(i in rev( seq(1,nrow(models2) ) ) ) {
+    if (( comparison$gomp[i] >= (1 - criteria/100) * DE$Confirmed[nrow(DE)] ) 
+        && ( comparison$gomp[i] <= (1 + criteria/100) * DE$Confirmed[nrow(DE)] )  ) {
+        # row still in search criteria
+        convergent = i
+    } else {
+      # stop searching
+      break  
+    }
+}
 # Plot Nowcast
 plot(comparison$Date, comparison$gomp,
      # main="Past Predictions for Today", 
@@ -439,16 +501,32 @@ plot(comparison$Date, comparison$gomp,
      xlab="Model as of Date",
      type="l",
      ylim=c(0,DE$Confirmed[nrow(DE)]*1.5),
-     col="grey"
+     col="blue"
      )
+# Shade the convergent area
+if(convergent> 0) {
+  rect(DE$Date[convergent],-1000000,max(DE$Date)+10,1000000000,col="lightblue",border=0)
+}
+# Lines
+lines(comparison$Date, comparison$gomp, col="darkblue", lwd=2)
 # Plot last known confirmed cumulative value (dashed line)
 abline(h=DE$Confirmed[nrow(DE)], lty=2)
+# plot Week Lines
+for (date in DE$Date) {
+  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
+    abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
+}
 # Add lines for key dates from DSM model
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], col="red")
-abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lwd=2, col="red")
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], col="red")
-
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
+# Add line when model converged
+# (v=DE$Date[convergent], lty=2, lwd=2, col="green")
 ```
+
+## Nowcast
+
+Yesterday `r DE$Confirmed[nrow(DE)]` COVID-19 cases were known in `r country` [1]. Figure \@ref(fig:nowcast) illustrates how past Gompertz models (blue line) have predicted the last known number of cumulative COVID-19 cases (dashed black line). `r ifelse(convergent>0, paste0("The vertical dashed blue line indicates that since ",DE$Date[convergent]," (day ",convergent,") all models were at most  ",criteria," percent off the case numbers reported yesterday. Hence, the Gompertz model could predict the development for ", (nrow(DE)-convergent), " days ahead."), "Unfortunately the Gompertz models did not yet converge and cannot provide reliable nowcasts and we must regard all forecasts with great sceptisism.")`
 
 ```{r, echo=FALSE}
 # Create new data for next week
@@ -543,15 +621,15 @@ d = data.frame(
   I_max_c=c( round(gomp$m$getAllPars()["a"], digits=0) ),
   alpha_c=c( gomp$m$getAllPars()["c"] ),
   beta_c=c(gomp$m$getAllPars()["b"]),
-  nc=c(0),
-  fc_0=c(0),
-  fc_1=c(0),
-  fc_2=c(0),
-  fc_3=c(0),
-  fc_4=c(0),
-  fc_5=c(0),
-  fc_6=c(0),
-  fc_7=c(0),
+  fc_0=c(Prediction$Model_Mean[1]),
+  fc_1=c(Prediction$Model_Mean[2]),
+  fc_2=c(Prediction$Model_Mean[3]),
+  fc_3=c(Prediction$Model_Mean[4]),
+  fc_4=c(Prediction$Model_Mean[5]),
+  fc_5=c(Prediction$Model_Mean[6]),
+  fc_6=c(Prediction$Model_Mean[7]),
+  fc_7=c(Prediction$Model_Mean[8]),
+  t_converge=c(convergent),
   assessment=c(0)  
 )
 write.table(d, file = "../models/history.csv", sep = ",", col.names = F, row.names=F, append = T, qmethod = "double")
