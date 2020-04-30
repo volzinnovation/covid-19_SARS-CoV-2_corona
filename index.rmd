@@ -10,7 +10,7 @@ country: Germany
 ```{r, echo=F}
 library(stringr)
 library(knitr)
-d = read.csv("../models/history.csv")
+d = read.csv("models/history.csv")
 # str(d)
 
 
@@ -120,3 +120,18 @@ _Notes:_
 2. We could not yet find *reliable* models countries that are not listed above, but are updating the list and our assessment on a daily basis._
 
 **Disclaimer:** This is preliminary research provided on a timely basis for information only. It is not intended as legal, medical, financial or political advice.
+
+# Frequently Asked Question (FAQ)
+
+## What is this ?
+An analysis of Covid-19 case time series around the world with projections and forecasts how cases numbers might grow in the week ahead due to the spread of SARS-CoV-2 (Corona) virus infections.
+
+## How does this work ?
+
+* We use the [Johns Hopkins University data set published on Github by the CSSE group](https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/).
+* The published reports are updated daily.
+* [Models are open source](https://github.com/volzinnovation/covid-19_SARS-CoV-2_corona/tree/master/src) and can be run with the [free statistical software R](https://www.r-project.org/) on your system of choice.
+
+## Whom should I contact for questions ?
+
+Please contact Raphael Volz (rv@volzinnovation.com) in case of questions about the analyses. Your feedback is welcome!
