@@ -432,10 +432,10 @@ for(i in rev( seq(1,nrow(models2) ) ) ) {
     if (( comparison$gomp[i] >= (1 - criteria/100) * DE$Confirmed[nrow(DE)] ) 
         && ( comparison$gomp[i] <= (1 + criteria/100) * DE$Confirmed[nrow(DE)] )  ) {
         # row still in search criteria
-        cat(paste0(i," : ", (1 - criteria/100) * DE$Confirmed[nrow(DE)] , "<=", comparison$gomp[i], "<=" ,  (1 + criteria/100) * DE$Confirmed[nrow(DE)] , "\n"))
+        #cat(paste0(i," : ", (1 - criteria/100) * DE$Confirmed[nrow(DE)] , "<=", comparison$gomp[i], "<=" ,  (1 + criteria/100) * DE$Confirmed[nrow(DE)] , "\n"))
         convergent = i
     } else {
-      cat(paste0("STOP"," : ", (1 - criteria/100) * DE$Confirmed[nrow(DE)] , "<=", comparison$gomp[i], "<=" ,  (1 + criteria/100) * DE$Confirmed[nrow(DE)] , "\n"))
+      # cat(paste0("STOP"," : ", (1 - criteria/100) * DE$Confirmed[nrow(DE)] , "<=", comparison$gomp[i], "<=" ,  (1 + criteria/100) * DE$Confirmed[nrow(DE)] , "\n"))
       # stop searching
       break  
     }
