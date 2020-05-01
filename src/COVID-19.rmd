@@ -287,10 +287,10 @@ a_d = round(doubleSigmoidalModel$slope2Param_Estimate, digits=2)
 a_i = round(doubleSigmoidalModel$slope1Param_Estimate, digits=2)
 t_max = round(doubleSigmoidalModel$maximum_x, digits=0)
 I_final_d = round(doubleSigmoidalModel$endDeclinePoint_y, digits=0)
-I_max_d = round(doubleSigmoidalModel$endDeclinePoint_y, digits=0)
+I_max_d = round(doubleSigmoidalModel$reachMaximum_y, digits=0)
 I_max_c = gomp$m$getAllPars()["a"]
 # Check whether a maximum can be found for the DSM model
-I_max_dsm = ifelse( ( a_d > 0 ) && ( I_final_d > 0.5 * I_max_d ),  
+I_max_dsm = ifelse( ( a_d > 0 ) && ( I_final_d < 0.5 * I_max_d ),  
                     dsm_cum[ t_max ] +  2 * ( dsm_cum[t_d] - dsm_cum[ t_max ]) , -1 ) # not really fixed asymptote, -1 if there is no recovery yet
 # Assess model
 if(t_d <= t_max) { assessment = FALSE} # Decay is before maximum
