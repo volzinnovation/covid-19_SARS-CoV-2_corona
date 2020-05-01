@@ -293,8 +293,9 @@ I_max_c = gomp$m$getAllPars()["a"]
 I_max_dsm = ifelse( ( a_d > 0 ) && ( I_final_d < 0.5 * I_max_d ),  
                     dsm_cum[ t_max ] +  2 * ( dsm_cum[t_d] - dsm_cum[ t_max ]) , -1 ) # not really fixed asymptote, -1 if there is no recovery yet
 # Assess model
-if(t_d <= t_max) { assessment = FALSE}
-if(t_d >= nrow(DE) ) { assessment = FALSE }
+if(t_d <= t_max) { assessment = FALSE} # Decay is before maximum
+if(t_d >= nrow(DE) ) { assessment = FALSE } # Decay starts in the future
+if(a_d >= 1  ) { assessment = FALSE } # Decay is too high
 ```
 
 ## Reliability of the DSM
