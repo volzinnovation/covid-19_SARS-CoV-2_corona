@@ -5,6 +5,18 @@
 # Install required packages first, by uncommenting the following line...
 # install.packages("forecast,knitr,minpack.lm,rmarkdown,zoo,xts,reshape,plyr,plotly, sicegar, lubridate, knitr, doBy")
 # Import required libraries
+#
+#
+#
+#
+# Use country from build script parameter, or default to a country (second parameter)
+################# DEBUG WITH COUNTRY NAME *********************
+country = ifelse(exists("country"),country,"Egypt") 
+################# DEBUG WITH A COUNTRY NAME *********************
+#
+#
+#
+#
 library(forecast)
 library(knitr)
 library(minpack.lm)
@@ -25,8 +37,6 @@ library(bookdown)
 options(digits = 3)
 # Set no scientific notation
 options(scipen = 999)
-# Use country from build script parameter, or default to a country (second parameter)
-country = ifelse(exists("country"),country,"Switzerland")
 
 # Change country name to adhere to the country rules
 thecountry <- list("Bahamas","Cayman Islands", "Central African Republic", "Comoros", "Czech Republic", 
@@ -35,6 +45,8 @@ thecountry <- list("Bahamas","Cayman Islands", "Central African Republic", "Como
 "Turks and Caicos Islands", "United Arab Emirates", "United Kingdom", "US","Virgin Islands")
 # countryname for use in the text
 countryname = ifelse(country %in% thecountry, paste0("the ", country),country)
+# Automated assessment of reliability
+assessment = TRUE
 ```
 
 ---
@@ -274,10 +286,15 @@ t_i = round(doubleSigmoidalModel$midPoint1_x, digits=0)
 a_d = round(doubleSigmoidalModel$slope2Param_Estimate, digits=2)
 a_i = round(doubleSigmoidalModel$slope1Param_Estimate, digits=2)
 t_max = round(doubleSigmoidalModel$maximum_x, digits=0)
-I_max_c = gomp$m$getAllPars()["a"]
-I_max_dsm = ifelse( a_d > 0 , dsm_cum[ t_max ] +  2 * ( dsm_cum[t_d] - dsm_cum[ t_max ]) , -1 ) # not really fixed asymptote, -1 if there is no recovery yet
 I_final_d = round(doubleSigmoidalModel$endDeclinePoint_y, digits=0)
-
+I_max_d = round(doubleSigmoidalModel$endDeclinePoint_y, digits=0)
+I_max_c = gomp$m$getAllPars()["a"]
+# Check whether a maximum can be found for the DSM model
+I_max_dsm = ifelse( ( a_d > 0 ) && ( I_final_d < 0.5 * I_max_d ),  
+                    dsm_cum[ t_max ] +  2 * ( dsm_cum[t_d] - dsm_cum[ t_max ]) , -1 ) # not really fixed asymptote, -1 if there is no recovery yet
+# Assess model
+if(t_d <= t_max) { assessment = FALSE}
+if(t_d >= nrow(DE) ) { assessment = FALSE }
 ```
 
 ## Reliability of the DSM
@@ -453,6 +470,9 @@ plot(comparison$Date, comparison$gomp,
 if(convergent> 0) {
   rect(DE$Date[convergent],-1000000,max(DE$Date)+10,1000000000,col="lightblue",border=0)
 }
+if (convergent == 0) {
+  assessment = FALSE
+}
 # Lines
 lines(comparison$Date, comparison$gomp, col="darkblue", lwd=2)
 # Plot last known confirmed cumulative value (dashed line)
@@ -576,7 +596,7 @@ d = data.frame(
   fc_6=c(Prediction$Model_Mean[7]),
   fc_7=c(Prediction$Model_Mean[8]),
   t_converge=c(convergent),
-  assessment=c(0)  
+  assessment=c(assessment)  
 )
 write.table(d, file = "../models/history.csv", sep = ",", col.names = F, row.names=F, append = T, qmethod = "double")
 
