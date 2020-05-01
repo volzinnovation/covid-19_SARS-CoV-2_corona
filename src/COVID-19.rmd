@@ -668,5 +668,4 @@ abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, c
 
 # Source code for model estimation
 
-```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
-```
+The source code for estimating the models and computing metrics, as well as generating this report can be found on [Github](https://github.com/volzinnovation/covid-19_SARS-CoV-2_corona/blob/master/src/COVID-19.rmd) and be run with the [free software environment for statistical computing and graphics R](https://www.r-project.org/) that is available for Windows, Mac and Linux.
