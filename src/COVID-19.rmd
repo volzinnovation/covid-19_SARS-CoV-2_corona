@@ -25,17 +25,25 @@ library(bookdown)
 options(digits = 3)
 # Set no scientific notation
 options(scipen = 999)
-# Use country from build script parameter, or default to German
-country = ifelse(exists("country"),country,"Germany")
+# Use country from build script parameter, or default to a country (second parameter)
+country = ifelse(exists("country"),country,"Switzerland")
+
+# Change country name to adhere to the country rules
+thecountry <- list("Bahamas","Cayman Islands", "Central African Republic", "Comoros", "Czech Republic", 
+"Dominican Republic", "Falkland Islands", "Gambia", "Isles of Man", "Ivory Coast", 
+"Leeward Islands", "Maldives", "Marshall Islands", "Netherlands", "Netherlands Antilles", "Philippines", "Solomon Islands", 
+"Turks and Caicos Islands", "United Arab Emirates", "United Kingdom", "US","Virgin Islands")
+# countryname for use in the text
+countryname = ifelse(country %in% thecountry, paste0("the ", country),country)
 ```
 
 ---
-title: "Growth of reported Covid-19 cases in `r country`"
+title: "Projections for Covid-19 cases in `r countryname`"
 author: Raphael Volz (rv@volzinnovation.com)
 date: Last updated on `r Sys.Date()`
 output: bookdown::html_document2
 params:
-country: Germany
+countryname: Germany
 ---
 
 ```{r, echo=FALSE}
@@ -143,7 +151,7 @@ last_increase_percent = round(Increase_d[length(Increase_d)],digits=1)
 double_days = log(2)/ log ( 1 + last_increase_percent ) *100
 ```
 
-According to the Johns Hopkins University global COVID-19 data set [1] a total of `r last_confirmed` COVID-19 cases were reported in `r country` on `r yesterday`. This number of cases increased by `r round(last_increase_percent,digits=1)` percent over the cumulative total cases known one day earlier. At this rate of cases double every `r round(double_days, digits=0)` days and the basic reproduction rate $R_0$ in `r country` can be estimated at `r round(last_R0,digits=1)`, an estimate of the average number of other people infected by a single infected person. Figure \@ref(fig:daily-plot) shows the time line of new cases reported in the country (black points) together with a five day moving average (purple line) that smoothes daily fluctuations in the reporting that are due to fewer capacities on weekends, holidays and other reporting mishaps.
+According to the Johns Hopkins University global COVID-19 data set [1] a total of `r last_confirmed` COVID-19 cases were reported in `r countryname` on `r yesterday`. This number of cases increased by `r round(last_increase_percent,digits=1)` percent over the cumulative total cases known one day earlier. At this rate of cases double every `r round(double_days, digits=0)` days and the basic reproduction rate $R_0$ in `r countryname` can be estimated at `r round(last_R0,digits=1)`, an estimate of the average number of other people infected by a single infected person. Figure \@ref(fig:daily-plot) shows the time line of new cases reported in the country (black points) together with a five day moving average (purple line) that smoothes daily fluctuations in the reporting that are due to fewer capacities on weekends, holidays and other reporting mishaps.
 
 ```{r daily-plot, fig.cap="New cases and five day moving average.", echo=FALSE}
 # plot daily deltas
@@ -163,7 +171,7 @@ lines(trend, col="purple")
 
 ```
 
-## Double sigmoidal model (DSM) for new cases
+## Model for new cases (DSM)
 
 New cases peek after a certain time of growth that follows a sigmoidal function and then recedes to a lower level as the epidemic wave fades out and enters an endemic state. This behavior can be modelled with a double-sigmoid function $f_{base}$, that is obtained by the product of two sigmoidal functions [2].
 
@@ -180,7 +188,7 @@ $$\begin{aligned}f_{d}(t) = \left\{
 \end{array} \right.
 \end{aligned}$$
 
-where $t_{i}$ is the midpoint and $\alpha_{i}$ the slope of the increase of cases and $t_{d}$ is the midpoint and $\alpha_{d}$ is the slope of the decrease in cases. $I_{max_{d}}$ the peak of new cases and $I_{final_{d}}$ the asymptotic final value of new cases at the end of the infections wave. Figure \@ref(fig:daily-model) shows the current _double-sigmoidal model_ ( orange line) that is fitted for the new case time series of `r country`, where the vertical dashed line highlights the midpoint $t_i$ of the growth phase, the vertical solid line indicates the peak of new infections $t_max$ and the vertical dotted line the midpoint $t_d$ of the decay phase. The dashed horizontal line marks the estimated asymptote of endemic new cases $I_{final_{d}}$ as this infection wave ends. 
+where $t_{i}$ is the midpoint and $\alpha_{i}$ the slope of the increase of cases and $t_{d}$ is the midpoint and $\alpha_{d}$ is the slope of the decrease in cases. $I_{max_{d}}$ the peak of new cases and $I_{final_{d}}$ the asymptotic final value of new cases at the end of the infections wave. Figure \@ref(fig:daily-model) shows the current _double-sigmoidal model_ ( orange line) that is fitted for the new case time series of `r countryname`, where the vertical dashed line highlights the midpoint $t_i$ of the growth phase, the vertical solid line indicates the peak of new infections $t_max$ and the vertical dotted line the midpoint $t_d$ of the decay phase. The dashed horizontal line marks the estimated asymptote of endemic new cases $I_{final_{d}}$ as this infection wave ends. 
 
 ```{r daily-model, fig.cap="Double sigmoidal model (DSM) for new cases.", echo=FALSE}
 #
@@ -263,14 +271,16 @@ dsm_ago <- sicegar::parameterCalculation(dsm_ago)
 # Assign values to variables (should have done that much earlier, TODO update uses to those names)
 t_d = round(doubleSigmoidalModel$midPoint2_x, digits=0)
 t_i = round(doubleSigmoidalModel$midPoint1_x, digits=0)
+a_d = round(doubleSigmoidalModel$slope2Param_Estimate, digits=2)
+a_i = round(doubleSigmoidalModel$slope1Param_Estimate, digits=2)
 t_max = round(doubleSigmoidalModel$maximum_x, digits=0)
 I_max_c = gomp$m$getAllPars()["a"]
-I_max_dsm = dsm_cum[ t_max ] + 2 * ( dsm_cum[t_d] - dsm_cum[ t_max ] ) # not really fixed asymptote
+I_max_dsm = ifelse( a_d > 0 , dsm_cum[ t_max ] +  2 * ( dsm_cum[t_d] - dsm_cum[ t_max ]) , -1 ) # not really fixed asymptote, -1 if there is no recovery yet
 I_final_d = round(doubleSigmoidalModel$endDeclinePoint_y, digits=0)
 
 ```
 
-## Week to week comparison of DSM models
+## Reliability of the DSM
 
 Since the model requires six parameters, it also requires more data points. Hence, it is only feasible to fit this model in later phases of the pandemic (ideally after the peak of daily infections occured) and the model is highly sensitive to new data, particularly with respect to finding the final asymptote$I_{final_{d}}$as the following comparison of the model shows. Nevertheless the model renders interesting characteristica of the past developments.
 
@@ -284,13 +294,12 @@ Since the model requires six parameters, it also requires more data points. Henc
 | $\alpha_{d}$ Slope of decay phase       | `r round(doubleSigmoidalModel$slope2Param_Estimate, digits=2)`                                                             | `r round(dsm_ago$slope2Param_Estimate, digits=2)`                                                             | `r round(doubleSigmoidalModel$slope2Param_Estimate - dsm_ago$slope2Param_Estimate, digits=2)` |
 | $t_{d}$ Midpoint of decay phase | `r DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1]` (Day `r round(doubleSigmoidalModel$midPoint2_x, digits=0)`) | `r DE$Date[round(dsm_ago$midPoint2_x, digits=0)][1]` (Day `r round(dsm_ago$midPoint2_x, digits=0)`)              | `r round(doubleSigmoidalModel$midPoint2_x, digits=0) -round(dsm_ago$midPoint2_x, digits=0)`   |
 
-In order to address the shortcoming of model instability under new data, we can attempt to fit a model on cumulative cases instead.
+In order to address the shortcoming of model instability under new data `r ifelse(I_max_dsm>0, " and the situation that no decay could be detected yet","")`, we can attempt to fit a different model working with cumulative case numbers instead.
 
 # Cumulative cases
 
-The cumulative total of COVID-19 cases in `r country` is the number of all COVID-19 cases known up to yesterday and **includes all patients already recovered from the infection**. This corresponds to the _Infected (I)_ number in the standard epidemiological SIR model. Figure \@ref(fig:cumulative-plot) shows the data points of the time series together with a Gompertz model for the cumulative cases (red line) as well as the cumulated double-sigmoidal model (orange line). The dashed horizontal lines show the expected maximum number of cases of the respective models.
+The cumulative total of COVID-19 cases in `r countryname` is the number of all COVID-19 cases known up to yesterday and **includes all patients already recovered from the infection**. This corresponds to the _Infected (I)_ number in the standard epidemiological SIR model. Figure \@ref(fig:cumulative-plot) shows the data points of the time series together with a Gompertz model for the cumulative cases (red line) as well as the cumulated double-sigmoidal model (orange line). The dashed horizontal lines show the expected maximum number of cases of the `r ifelse(I_max_dsm>0,"respective models", "Gompertz model ( the cumulated double-sigmoidal model does not have an asymptote )")`. `r ifelse(I_final_d>0 && I_max_dsm>0 ,paste0(" _Note:_ The cumulated double-sigmoidal model does not have an asymptote, since $I_{final_{d}}$ is not zero, the line can be considered as the number of infections when the infective wave ends and the endemic state starts. "),"" )`
 
-`r ifelse(I_final_d>10,paste0(" _Note:_ The cumulated double-sigmoidal model does not have an asymptote, since $I_{final_{d}}$ is not zero, the line can be considered as the number of infections when the infective wave ends and the endemic state starts. According to the DSM this happens when a total ", round(I_max_dsm, digits=0), " cases are reached."),"" )`
 
 ```{r cumulative-plot, fig.cap="Cumulative cases with DSM and Gompertz models", echo=FALSE}
 # Plot Infections over Time
@@ -319,7 +328,8 @@ lines(DE$Date, dsm_cum, col="orange", lwd=2)
 points(DE$Date, DE$Confirmed, col="black")
 # add asymptotes I_max
 abline(h=I_max_c, lty=2, lwd=2, col="red")
-abline(h=I_max_dsm, lty=2, lwd=2, col="orange")
+# add asymptote I_max_dsm, only if there is already some recovery
+if(I_max_dsm > 0) { abline(h=I_max_dsm, lty=2, lwd=2, col="orange") }
 
 ```
 
@@ -331,11 +341,7 @@ $$ f_{c}(t) = I_{max_{c}}  * e^{ - \beta_{c} * e^{ - \alpha_{c} * t }} $$
 
 Where the parameter $I_{max_{c}}$ is the estimated maximum number of cumulative cases (asymptote), $\beta_{c}$ inflects the curve along time, and $\alpha_{c}$ is the maximum absolute growth rate of cumulated cases.
 
-This function is the integral of the probability density function (PDF) developed by Benjamin Gompertz in 1825 to model human mortality, hence his probability densitiy function (PDF) is the derivative of the CDF:
-
-$$\frac{\partial f_{c}(t)}{\partial t} = I_{max_{c}} * \beta_{c} * \alpha_{c} * e^{ - \beta_{c} * e^{ - \alpha_{c} * t } - \alpha_{c} * t} $$
-
-## Week to week comparison of Gompertz models
+## Reliability of the Gompertz model
 
 The Gompertz model change over time as new data is available. Obviously, we are interested whether the models are reliable and in particular show some convergence. When we compare the current model with the model calculated using the information that was available last week, we can again observe how the model parameters have changed.
 
@@ -345,9 +351,7 @@ The Gompertz model change over time as new data is available. Obviously, we are 
 | $\alpha_{c}$ Growth rate      | `r gomp$m$getAllPars()["c"]`                  | `r gomp_ago$m$getAllPars()["c"]`                  | `r gomp$m$getAllPars()["c"] - gomp_ago$m$getAllPars()["c"]`                  |
 | $\beta_{c}$ Time shift       | `r round(gomp$m$getAllPars()["b"], digits=0)` | `r round(gomp_ago$m$getAllPars()["b"], digits=0)` | `r round(gomp$m$getAllPars()["b"] - gomp_ago$m$getAllPars()["b"], digits=0)` |
 
-## Parameter convergence of the Gompertz model
-
-Figures \@ref(fig:evol-Imax) - \@ref(fig:evol-beta) present how the model parameters change over time as new cases are reported every day.
+# Projections
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
 # find first date of infections
@@ -409,66 +413,6 @@ for (date in dates) {
 models2$Date=as.Date(models2$Date, origin="1970-01-01")
 ```
 
-```{r evol-Imax, fig.cap="Parameter evolution of expected maximum (I_max_c)", echo=FALSE}
-# Plot parameter evolution for I_maxs
-plot(models2$Date, models2$Maximum,
-     ylab="Expected maximum",
-     xlab="Model as of Date",
-     type="l",
-     ylim=c(0,max(DE$Confirmed)*4)
-    )
-# plot Week Lines
-for (date in DE$Date) {
-  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
-    abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
-}
-# Add lines for key dates from DSM model
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
-abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
-```
-
-```{r evol-alpha, fig.cap="Parameter evolution of growth rate (alpha_c)", echo=FALSE}
-# Plot parameter evolution for alphae
-plot(models2$Date, models2$C,
-     ylab="Alpha",
-     xlab="Model as of Date",
-     type="l",
-     ylim=c(0,models2$C[nrow(models2)]*4)
-    )
-# plot Week Lines
-for (date in DE$Date) {
-  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
-    abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
-}
-# Add lines for key dates from DSM model
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
-abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
-```
-
-```{r evol-beta, fig.cap="Parameter evolution of time shift (beta_c)", echo=FALSE}
-# Plot parameter evolution for betae
-plot(models2$Date, models2$B,
-     ylab="Beta",
-     xlab="Model as of Date",
-     type="l",
-     ylim=c(0,models2$B[nrow(models2)]*4)
-
-    )
-# plot Week Lines
-for (date in DE$Date) {
-  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
-    abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
-}
-# Add lines for key dates from DSM model
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
-abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
-abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
-```
-
-# Projections
-
 ## Methodology
 
 Putting in future dates into the current models allows to project future cases. _Note:_ The actual development can differ from model predictions, for example if social distancing norms change or methods in data collection are altered. If such changes happen, a model fitted to the past is no longer valid.
@@ -488,8 +432,10 @@ for(i in rev( seq(1,nrow(models2) ) ) ) {
     if (( comparison$gomp[i] >= (1 - criteria/100) * DE$Confirmed[nrow(DE)] ) 
         && ( comparison$gomp[i] <= (1 + criteria/100) * DE$Confirmed[nrow(DE)] )  ) {
         # row still in search criteria
+        cat(paste0(i," : ", (1 - criteria/100) * DE$Confirmed[nrow(DE)] , "<=", comparison$gomp[i], "<=" ,  (1 + criteria/100) * DE$Confirmed[nrow(DE)] , "\n"))
         convergent = i
     } else {
+      cat(paste0("STOP"," : ", (1 - criteria/100) * DE$Confirmed[nrow(DE)] , "<=", comparison$gomp[i], "<=" ,  (1 + criteria/100) * DE$Confirmed[nrow(DE)] , "\n"))
       # stop searching
       break  
     }
@@ -498,7 +444,7 @@ for(i in rev( seq(1,nrow(models2) ) ) ) {
 plot(comparison$Date, comparison$gomp,
      # main="Past Predictions for Today", 
      ylab="Cases", 
-     xlab="Model as of Date",
+     xlab="Gompertz model based on cases known on date",
      type="l",
      ylim=c(0,DE$Confirmed[nrow(DE)]*1.5),
      col="blue"
@@ -526,7 +472,7 @@ abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, c
 
 ## Nowcast
 
-Yesterday `r DE$Confirmed[nrow(DE)]` COVID-19 cases were known in `r country` [1]. Figure \@ref(fig:nowcast) illustrates how past Gompertz models (blue line) have predicted the last known number of cumulative COVID-19 cases (dashed black line). `r ifelse(convergent>0, paste0("The vertical dashed blue line indicates that since ",DE$Date[convergent]," (day ",convergent,") all models were at most  ",criteria," percent off the case numbers reported yesterday. Hence, the Gompertz model could predict the development for ", (nrow(DE)-convergent), " days ahead."), "Unfortunately the Gompertz models did not yet converge and cannot provide reliable nowcasts and we must regard all forecasts with great scepticism.")`
+Yesterday `r DE$Confirmed[nrow(DE)]` COVID-19 cases were known in `r countryname` [1]. Figure \@ref(fig:nowcast) illustrates how past Gompertz models (blue line) have predicted the last known number of cumulative COVID-19 cases (dashed black line). `r ifelse(convergent>0, paste0("The lightblue shaded area indicates that the Gompertz model of ",DE$Date[convergent]," (day ",convergent,") and all later models could predict the case number for ", yesterday, " with at most  ",criteria," percent difference to the actual case numbers. Hence, the Gompertz models could reliably predict the actual case numbers for the coming ", (nrow(DE)-convergent), " days."), "Unfortunately the Gompertz models did not yet converge and cannot provide reliable nowcasts and **we must regard all forecasts with great scepticism.**")`
 
 ```{r, echo=FALSE}
 # Create new data for next week
@@ -581,9 +527,9 @@ kable(Prediction,
 
 # Discussion and outlook
 
-Epidemiological models are useful for policy makers, e.g. to assess (lack of) ICU beds, required (additional) restrictions of daily life, etc. However models require (often disputed) assumptions for model parameters. The data-driven approach demonstrated here avoids parameter assumptions and uses past data to fit models that not only describe the past developments but provide reliable forecasts for the nearer future of an epidemic. Next to policy makers, the general public can use the projections to assess their expectations when business or schools might reopen (or reclose).
+Epidemiological models are useful for policy makers, e.g. to assess needed ICU beds, required (additional) restrictions of daily life, etc. However models require (often disputed) assumptions for model parameters. The data-driven approach demonstrated here avoids parameter assumptions and uses past data to fit models that not only describe the past developments but provide reliable forecasts for the nearer future of an epidemic. Next to policy makers, the general public can use the projections to assess their expectations when business or schools might reopen (or reclose).
 
-As a next step the convergence of models could be investigated more closely to assess whether model divergence is an early indicator for a general change in infective behavior. Additional data about the population and population structure could be used to compare between countries, for example to assess the effectiveness of different public policies for controlling the disease.
+As a next step data about the population and population structure could be used to compare between countries, for example to assess the effectiveness of different public policies for controlling the disease.
 
 # References
 
@@ -591,11 +537,11 @@ As a next step the convergence of models could be investigated more closely to a
 2.  Mehmet Caglar, Ashley Teufel, Claus Wilke, _Sicegar: R package for sigmoidal and double-sigmoidal curve fitting_ in PeerJ. 2018 Jan 16;6:e4251. doi: 10.7717/peerj.4251. eCollection 2018.
 3.  Benjamin Gompertz, _On the nature of the function expressive of the law of human mortality and a new mode of determining the value of life contingencies_. Philosophical Transactions of the Royal Society of London : Biological Sciences. 1825, 182:5 13-85.
 
-# Appendix
+# (APPENDIX) Appendix {-}
 
-## Cumulative (Gompertz) model history
+# Gompertz model history
 
-The following table states the known COVID-19 infections and duration of the pandemic in `r country` on a given day. It also states all _three parameters_ of the model estimated with data available on that date and reports the root mean square error (RMSE) of the model on the available data RMSE (Training). The information made available after model creation is used as a test of the model precision on unknown data and reported as RMSE (Test). The forecast of the given model for yesterday is provided in the last column.
+The following table states the known COVID-19 infections and duration of the pandemic in `r countryname` on a given day. It also states all _three parameters_ of the model estimated with data available on that date and reports the root mean square error (RMSE) of the model on the available data RMSE (Training). The information made available after model creation is used as a test of the model precision on unknown data and reported as RMSE (Test). The forecast of the given model for yesterday is provided in the last column.
 
 ```{r, echo=FALSE}
 # Print result table
@@ -634,4 +580,72 @@ d = data.frame(
 )
 write.table(d, file = "../models/history.csv", sep = ",", col.names = F, row.names=F, append = T, qmethod = "double")
 
+```
+
+# Parameter convergence of the Gompertz model
+
+Figures \@ref(fig:evol-Imax) - \@ref(fig:evol-beta) present how the model parameters change over time as new cases are reported every day.
+
+
+```{r evol-Imax, fig.cap="Parameter evolution of expected maximum (I_max_c)", echo=FALSE}
+# Plot parameter evolution for I_maxs
+plot(models2$Date, models2$Maximum,
+     ylab="Expected maximum",
+     xlab="Gompertz model based on cases known on date",
+     type="l",
+     ylim=c(0,max(DE$Confirmed)*4)
+    )
+# plot Week Lines
+for (date in DE$Date) {
+  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
+    abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
+}
+# Add lines for key dates from DSM model
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
+```
+
+```{r evol-alpha, fig.cap="Parameter evolution of growth rate (alpha_c)", echo=FALSE}
+# Plot parameter evolution for alphae
+plot(models2$Date, models2$C,
+     ylab="Alpha",
+     xlab="Gompertz model based on cases known on date",
+     type="l",
+     ylim=c(0,models2$C[nrow(models2)]*4)
+    )
+# plot Week Lines
+for (date in DE$Date) {
+  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
+    abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
+}
+# Add lines for key dates from DSM model
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
+```
+
+```{r evol-beta, fig.cap="Parameter evolution of time shift (beta_c)", echo=FALSE}
+# Plot parameter evolution for betae
+plot(models2$Date, models2$B,
+     ylab="Beta",
+     xlab="Gompertz model based on cases known on date",
+     type="l",
+     ylim=c(0,models2$B[nrow(models2)]*4)
+
+    )
+# plot Week Lines
+for (date in DE$Date) {
+  if( as.numeric(strftime(as.Date(date, origin="1970-01-01"), "%u")) == 7 )
+    abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
+}
+# Add lines for key dates from DSM model
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
+abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
+```
+
+# Source code for model estimation
+
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
 ```
