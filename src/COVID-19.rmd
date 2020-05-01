@@ -467,7 +467,7 @@ plot(comparison$Date, comparison$gomp,
      xlab="Gompertz model based on cases known on date",
      type="l",
      ylim=c(0,DE$Confirmed[nrow(DE)]*1.5),
-     col="blue"
+     col="red"
      )
 # Shade the convergent area
 if(convergent> 0) {
@@ -495,7 +495,7 @@ abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, c
 
 ## Nowcast
 
-Yesterday `r DE$Confirmed[nrow(DE)]` COVID-19 cases were known in `r countryname` [1]. Figure \@ref(fig:nowcast) illustrates how past Gompertz models (blue line) have predicted the last known number of cumulative COVID-19 cases (dashed black line). `r ifelse(convergent>0, paste0("The lightblue shaded area indicates that the Gompertz model of ",DE$Date[convergent]," (day ",convergent,") and all later models could predict the case number for ", yesterday, " with at most  ",criteria," percent difference to the actual case numbers. Hence, the Gompertz models could reliably predict the actual case numbers for the coming ", (nrow(DE)-convergent), " days."), "Unfortunately the Gompertz models did not yet converge and cannot provide reliable nowcasts and **we must regard all forecasts with great scepticism.**")`
+Yesterday `r DE$Confirmed[nrow(DE)]` COVID-19 cases were known in `r countryname` [1]. Figure \@ref(fig:nowcast) illustrates how past Gompertz models (red line) have predicted the last known number of cumulative COVID-19 cases (dashed black line). `r ifelse(convergent>0, paste0("The lightblue shaded area indicates that the Gompertz model of ",DE$Date[convergent]," (day ",convergent,") and all later models could predict the case number for ", yesterday, " with at most  ",criteria," percent difference to the actual case numbers. Hence, the Gompertz models could reliably predict the actual case numbers for the coming ", (nrow(DE)-convergent), " days."), "Unfortunately the Gompertz models did not yet converge and cannot provide reliable nowcasts and **we must regard all forecasts with great scepticism.**")`
 
 ```{r, echo=FALSE}
 # Create new data for next week
