@@ -11,7 +11,7 @@
 #
 # Use country from build script parameter, or default to a country (second parameter)
 ################# DEBUG WITH COUNTRY NAME *********************
-country = ifelse(exists("country"),country,"Andorra") 
+country = ifelse(exists("country"),country,"Iceland") 
 ################# DEBUG WITH A COUNTRY NAME *********************
 #
 #
@@ -447,13 +447,15 @@ stop = F
 criteria = 2 # nowcast should be maximum 2% off the real value
 # search backwards
 for(i in rev( seq(1,nrow(models2) ) ) ) {
-    if (( comparison$gomp[i] >= (1 - criteria/100) * DE$Confirmed[nrow(DE)] ) 
-        && ( comparison$gomp[i] <= (1 + criteria/100) * DE$Confirmed[nrow(DE)] )  ) {
+    if (
+        (( comparison$gomp[i] >= (1 - criteria/100) * DE$Confirmed[nrow(DE)] ) 
+        && ( comparison$gomp[i] <= (1 + criteria/100) * DE$Confirmed[nrow(DE)] ))
+        ) {
         # row still in search criteria
         #cat(paste0(i," : ", (1 - criteria/100) * DE$Confirmed[nrow(DE)] , "<=", comparison$gomp[i], "<=" ,  (1 + criteria/100) * DE$Confirmed[nrow(DE)] , "\n"))
         convergent = i
     } else {
-      # cat(paste0("STOP"," : ", (1 - criteria/100) * DE$Confirmed[nrow(DE)] , "<=", comparison$gomp[i], "<=" ,  (1 + criteria/100) * DE$Confirmed[nrow(DE)] , "\n"))
+      #cat(paste0("STOP"," : ", (1 - criteria/100) * DE$Confirmed[nrow(DE)] , "<=", comparison$gomp[i], "<=" ,  (1 + criteria/100) * DE$Confirmed[nrow(DE)] , "\n"))
       # stop searching
       break  
     }
@@ -461,7 +463,7 @@ for(i in rev( seq(1,nrow(models2) ) ) ) {
 # Plot Nowcast
 plot(comparison$Date, comparison$gomp,
      # main="Past Predictions for Today", 
-     ylab="Cases", 
+     ylab=paste0("Predicted cum. cases on ", yesterday), 
      xlab="Gompertz model based on cases known on date",
      type="l",
      ylim=c(0,DE$Confirmed[nrow(DE)]*1.5),
