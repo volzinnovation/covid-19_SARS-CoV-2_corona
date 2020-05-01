@@ -11,7 +11,7 @@
 #
 # Use country from build script parameter, or default to a country (second parameter)
 ################# DEBUG WITH COUNTRY NAME *********************
-country = ifelse(exists("country"),country,"Egypt") 
+country = ifelse(exists("country"),country,"Andorra") 
 ################# DEBUG WITH A COUNTRY NAME *********************
 #
 #
@@ -290,7 +290,7 @@ I_final_d = round(doubleSigmoidalModel$endDeclinePoint_y, digits=0)
 I_max_d = round(doubleSigmoidalModel$endDeclinePoint_y, digits=0)
 I_max_c = gomp$m$getAllPars()["a"]
 # Check whether a maximum can be found for the DSM model
-I_max_dsm = ifelse( ( a_d > 0 ) && ( I_final_d < 0.5 * I_max_d ),  
+I_max_dsm = ifelse( ( a_d > 0 ) && ( I_final_d > 0.5 * I_max_d ),  
                     dsm_cum[ t_max ] +  2 * ( dsm_cum[t_d] - dsm_cum[ t_max ]) , -1 ) # not really fixed asymptote, -1 if there is no recovery yet
 # Assess model
 if(t_d <= t_max) { assessment = FALSE} # Decay is before maximum
