@@ -16,8 +16,7 @@ d = subset(d, date == last_d)
 # str(d)
 
 
-converged = subset(d, ( t_convergence > 0))
-converged = subset(converged, I_max_c < 10000000)
+converged = subset(d,  t_convergence > 0)
 filename = str_replace_all(converged$country, c(" "="","\\*"="","US"="USA","'"=""))
 link = paste0("[",converged$country,"](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/",filename,".html)")
 
@@ -88,9 +87,10 @@ d[d$country=="Ireland",]$cum_cases
 
 EU_future = EU_max - EU_current
 
-row = data.frame(country="_European Union_", current= EU_current, future=EU_future, max = EU_max)
+row = data.frame(country="_European Union_", 
+                 current= EU_current, future=EU_future, 
+                 max = EU_max)
 df = rbind(df, row)
-# create link
 ```
 
 # Fast Facts
@@ -119,7 +119,7 @@ _Notes:_
 
 1. If future cases are 0, the first wave has ended in the country according to our model and the Virus is now in an endemic phase, where new cases will pop up and need to be handled efficiently.
 
-2. We could not yet find *reliable* models countries that are not listed above, but are updating the list and our assessment on a daily basis._
+2. We could not yet find *reliable* models countries that are not listed above, but are updating the list and our assessment on a daily basis.
 
 **Disclaimer:** This is preliminary research provided on a timely basis for information only. It is not intended as legal, medical, financial or political advice.
 
