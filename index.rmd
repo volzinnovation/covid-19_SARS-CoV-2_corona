@@ -14,9 +14,11 @@ d = read.csv("models/history.csv")
 last_d = d$date[nrow(d)]
 d = subset(d, date == last_d)
 # str(d)
+# Choose only those with true assessment
+converged = subset(d,  assessment == TRUE)
 
-
-converged = subset(d,  t_convergence > 0)
+#converged = subset(d,  t_convergence > 0)
+#
 filename = str_replace_all(converged$country, c(" "="","\\*"="","US"="USA","'"=""))
 link = paste0("[",converged$country,"](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/",filename,".html)")
 
@@ -95,15 +97,15 @@ df = rbind(df, row)
 
 # Fast Facts
 
-* Reliable forecasts can be currently be found for  `r nrow(converged)` ( out of `r nrow(d)`) countries that have reported COVID-19 cases according to the [Johns Hopkins University data set](https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/).
+* Reliable forecasts can be currently be found for  `r nrow(converged)` (out of `r nrow(d)`) countries that have reported COVID-19 cases according to the [Johns Hopkins University data set](https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/).
 
 * Those models have predicted the last known cases for an average of  `r round(mean(converged$day - converged$t_convergence), digits=0) ` days ahead.
 
-* An additional **`r format(sum(converged$I_max_c) - sum(converged$cum_cases), digits=0, big.mark=",")`** new cases will appear in the next days and weeks.
+* An additional **`r format(sum(converged$I_max_c) - sum(converged$cum_cases), digits=0, big.mark=",")`** new cases will appear in the next days and weeks in those countries.
 
-* World-wide total will be at least  **`r format(sum(converged$I_max_c), digits=0, big.mark=",")`** cases based on the estimates for the countries listed below.
+* Their total will be at least  **`r format(sum(converged$I_max_c), digits=0, big.mark=",")`** cases based on the estimates for the countries listed below.
 
-* Assuming 7.5% case fatality rate the pandemic kills at least **`r format(round(sum(converged$I_max_c *0.075 ), digits=0), big.mark=",")`** people worldwide in the first wave.
+* Assuming 7.5% case fatality rate the pandemic kills at least **`r format(round(sum(converged$I_max_c *0.075 ), digits=0), big.mark=",")`** people in those countries.
 
 
 # Projections per country
@@ -121,7 +123,7 @@ _Notes:_
 
 2. We could not yet find *reliable* models countries that are not listed above, but are updating the list and our assessment on a daily basis.
 
-**Disclaimer:** This is preliminary research provided on a timely basis for information only. It is not intended as legal, medical, financial or political advice.
+**Disclaimer:** This is preliminary research provided on a timely basis for information only. It is not intended as commercial, legal, medical, financial or political advice.
 
 # Frequently Asked Question (FAQ)
 
