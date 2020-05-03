@@ -16,6 +16,7 @@ d = subset(d, date == last_d)
 # str(d)
 # Choose only those with true assessment
 converged = subset(d,  assessment == TRUE)
+converged = subset(converged,I_max_c <=1000000)
 
 #converged = subset(d,  t_convergence > 0)
 #
@@ -29,70 +30,6 @@ max=converged$I_max_c)
 df$future = ifelse(df$future>0,df$future,0)
 df$max = ifelse(df$future==0,df$current,df$max)
 
-EU_max = 
-d[d$country=="Austria",]$I_max_c +
-d[d$country=="Italy",]$I_max_c +
-d[d$country=="Belgium",]$I_max_c +
-d[d$country=="Latvia",]$I_max_c +
-d[d$country=="Bulgaria",]$I_max_c +
-d[d$country=="Lithuania",]$I_max_c +
-d[d$country=="Croatia",]$I_max_c +
-d[d$country=="Luxembourg",]$I_max_c +
-d[d$country=="Cyprus",]$I_max_c +
-d[d$country=="Malta",]$I_max_c +
-d[d$country=="Czechia",]$I_max_c +
-d[d$country=="Netherlands",]$I_max_c +
-d[d$country=="Denmark",]$I_max_c +
-d[d$country=="Poland",]$I_max_c +
-d[d$country=="Estonia",]$I_max_c +
-d[d$country=="Portugal",]$I_max_c +
-d[d$country=="Finland",]$I_max_c +
-d[d$country=="Romania",]$I_max_c +
-d[d$country=="France",]$I_max_c +
-d[d$country=="Slovakia",]$I_max_c +
-d[d$country=="Germany",]$I_max_c +
-d[d$country=="Slovenia",]$I_max_c +
-d[d$country=="Greece",]$I_max_c +
-d[d$country=="Spain",]$I_max_c +
-d[d$country=="Hungary",]$I_max_c +
-d[d$country=="Sweden",]$I_max_c +
-d[d$country=="Ireland",]$I_max_c
-
-EU_current =
-d[d$country=="Austria",]$cum_cases +
-d[d$country=="Italy",]$cum_cases +
-d[d$country=="Belgium",]$cum_cases +
-d[d$country=="Latvia",]$cum_cases +
-d[d$country=="Bulgaria",]$cum_cases +
-d[d$country=="Lithuania",]$cum_cases +
-d[d$country=="Croatia",]$cum_cases +
-d[d$country=="Luxembourg",]$cum_cases +
-d[d$country=="Cyprus",]$cum_cases +
-d[d$country=="Malta",]$cum_cases +
-d[d$country=="Czechia",]$cum_cases +
-d[d$country=="Netherlands",]$cum_cases +
-d[d$country=="Denmark",]$cum_cases +
-d[d$country=="Poland",]$cum_cases +
-d[d$country=="Estonia",]$cum_cases +
-d[d$country=="Portugal",]$cum_cases +
-d[d$country=="Finland",]$cum_cases +
-d[d$country=="Romania",]$cum_cases +
-d[d$country=="France",]$cum_cases +
-d[d$country=="Slovakia",]$cum_cases +
-d[d$country=="Germany",]$cum_cases +
-d[d$country=="Slovenia",]$cum_cases +
-d[d$country=="Greece",]$cum_cases +
-d[d$country=="Spain",]$cum_cases +
-d[d$country=="Hungary",]$cum_cases +
-d[d$country=="Sweden",]$cum_cases +
-d[d$country=="Ireland",]$cum_cases
-
-EU_future = EU_max - EU_current
-
-row = data.frame(country="_European Union_", 
-                 current= EU_current, future=EU_future, 
-                 max = EU_max)
-df = rbind(df, row)
 ```
 
 # Fast Facts
