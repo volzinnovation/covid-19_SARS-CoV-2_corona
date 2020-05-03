@@ -26,8 +26,17 @@ for(country in (countries)) {
   try({
     cat(country)
     filename = str_replace_all(country, c(" "="","\\*"="","US"="USA","'"=""))
-    render(file, "bookdown::html_document2", paste0("../reports/latest/",filename,".html)\n"))
+    render(file, "bookdown::html_document2", paste0("../reports/latest/",filename,".html"))
     # render(file, "bookdown::pdf_document2", paste0("../reports/latest/",country,".pdf"))
     
   })
 }
+# Update index.html
+render("../index.rmd", "html_document", "../index.html")
+# Clean Up broken reports
+#
+#rm *_files/figure-html/*.png
+# rmdir *_files/figure-html
+# rmdir *_files
+#
+# Commit and Push
