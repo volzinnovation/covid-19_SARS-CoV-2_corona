@@ -10,6 +10,7 @@ country: Germany
 ```{r, echo=F}
 library(stringr)
 library(knitr)
+library(DT)
 d = read.csv("models/history.csv")
 last_d = d$date[nrow(d)]
 d = subset(d, date == last_d)
