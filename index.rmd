@@ -7,18 +7,22 @@ params:
 country: Germany
 ---
 
+
 ```{r, echo=F}
 library(stringr)
 library(knitr)
 library(DT)
+p = read.csv("population.csv")
+
 d = read.csv("models/history.csv")
+d = merge(d, p, by.x="country", by.y="Country", sort = TRUE)
 last_d = d$date[nrow(d)]
 d = subset(d, date == last_d)
 # str(d)
 # Choose only those with true assessment
-converged = subset(d,  assessment == TRUE)
-converged = subset(converged,I_max_c <=1000000)
-
+#converged = subset(d,  assessment == TRUE)
+#converged = subset(converged,I_max_c <=1000000)
+converged = subset(d,(I_max_c - cum_cases) < cum_cases )
 #converged = subset(d,  t_convergence > 0)
 #
 filename = str_replace_all(converged$country, c(" "="","\\*"="","US"="USA","'"=""))
@@ -26,11 +30,12 @@ link = paste0("[",converged$country,"](https://www.volzinnovation.com/covid-19_S
 
 df = data.frame(country=link, current=converged$cum_cases, 
 future=converged$I_max_c -converged$cum_cases,
-max=converged$I_max_c)
+max=converged$I_max_c,
+percapita=converged$PopulationInThousands)
 
 df$future = ifelse(df$future>0,df$future,0)
 df$max = ifelse(df$future==0,df$current,df$max)
-
+df$percapita = round(df$max/df$percapita/10, digits=2)
 ```
 
 # Fast Facts
@@ -46,14 +51,14 @@ df$max = ifelse(df$future==0,df$current,df$max)
 * Assuming 7.5% case fatality rate the pandemic kills at least **`r format(round(sum(converged$I_max_c *0.075 ), digits=0), big.mark=",")`** people in those countries.
 
 
-# Projections per country
+# Projections for Countries
 
 Follow the link for country specific reports. 
 
 ```{r, echo=F}
 kable(df,     
       format.args = list(big.mark = ",",scientific = FALSE),
-     col.names=c("Country", "Current Cases", "Future Cases (1)", "Total"))
+     col.names=c("Country", "Current Cases", "Future Cases (1)", "Total Cases", "Infected Population %"))
 ```
 _Notes:_
 
