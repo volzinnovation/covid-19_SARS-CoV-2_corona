@@ -8,16 +8,19 @@ country: Germany
 ---
 
 
-```{r, echo=F}
+```{r, echo=F, messages=F, warning=F, include=F}
 library(stringr)
 library(knitr)
 library(DT)
+library(dplyr)
 p = read.csv("population.csv")
 
 d = read.csv("models/history.csv")
 d = merge(d, p, by.x="country", by.y="Country", sort = TRUE)
+
 last_d = d$date[nrow(d)]
 d = subset(d, date == last_d)
+d = distinct(d, country,  .keep_all = TRUE)
 # str(d)
 # Choose only those with true assessment
 #converged = subset(d,  assessment == TRUE)
