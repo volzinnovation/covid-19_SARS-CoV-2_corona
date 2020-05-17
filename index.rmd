@@ -8,7 +8,7 @@ country: Germany
 ---
 
 
-```{r, echo=F, messages=F, warning=F, include=F}
+```{r , echo=F  , messages=F, warning=F, include=F}
 library(stringr)
 library(knitr)
 library(DT)
@@ -16,10 +16,12 @@ library(dplyr)
 p = read.csv("population.csv")
 
 d = read.csv("models/history.csv")
+last_d = d$date[nrow(d)]
+last_d
+d = subset(d, date == last_d)
 d = merge(d, p, by.x="country", by.y="Country", sort = TRUE)
 
-last_d = d$date[nrow(d)]
-d = subset(d, date == last_d)
+
 d = distinct(d, country,  .keep_all = TRUE)
 # str(d)
 # Choose only those with true assessment
@@ -61,13 +63,15 @@ Follow the link for country specific reports.
 ```{r, echo=F}
 kable(df,     
       format.args = list(big.mark = ",",scientific = FALSE),
-     col.names=c("Country", "Current Cases", "Future Cases (1)", "Total Cases", "Infected Population %"))
+     col.names=c("Country", "Current Cases", "Future Cases (1)", "Total Cases", "Infected Population % (2)"))
 ```
 _Notes:_
 
-1. If future cases are 0, the first wave has ended in the country according to our model and the Virus is now in an endemic phase, where new cases will pop up and need to be handled efficiently.
+1. If future cases are 0, the first wave has ended in the country according to our model and the virus is now in an endemic phase, where new cases will pop up and need to be handled efficiently.
 
-2. We could not yet find *reliable* models countries that are not listed above, but are updating the list and our assessment on a daily basis.
+2. Infected Population refers to the share of reported cases wrt. total population of the country and does not include patients that were not reported or asymptomatic. 
+
+We could not yet find *reliable* models countries that are not listed above, but we are updating the list and our assessment on a daily basis.
 
 **Disclaimer:** This is preliminary research provided on a timely basis for information only. It is not intended as commercial, legal, medical, financial or political advice.
 
