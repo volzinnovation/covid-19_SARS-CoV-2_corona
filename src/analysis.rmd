@@ -1,0 +1,169 @@
+---
+title: "Projections for the Covid-19 pandemic"
+author: Raphael Volz (rv@volzinnovation.com)
+date: Last updated on `r Sys.Date()`
+output: bookdown::html_document2
+---
+
+```{r, echo=F}
+library(stringr)
+library(knitr)
+library(ggplot2)
+library(scales)
+library(lubridate)
+library(timelineS)
+
+d = read.csv("../models/history.csv")
+last_d = d$date[nrow(d)]
+d = subset(d, date == last_d)
+# str(d)
+# Choose only those with true assessment
+converged = subset(d,  assessment == TRUE)
+
+#converged = subset(d,  t_convergence > 0)
+#
+filename = str_replace_all(converged$country, c(" "="","\\*"="","US"="USA","'"=""))
+link = paste0("[",converged$country,"](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/",filename,".html)")
+
+df = data.frame(country=link, current=converged$cum_cases, 
+future=converged$I_max_c -converged$cum_cases,
+max=converged$I_max_c)
+
+df$future = ifelse(df$future>0,df$future,0)
+df$max = ifelse(df$future==0,df$current,df$max)
+
+EU_max = 
+d[d$country=="Austria",]$I_max_c +
+d[d$country=="Italy",]$I_max_c +
+d[d$country=="Belgium",]$I_max_c +
+d[d$country=="Latvia",]$I_max_c +
+d[d$country=="Bulgaria",]$I_max_c +
+d[d$country=="Lithuania",]$I_max_c +
+d[d$country=="Croatia",]$I_max_c +
+d[d$country=="Luxembourg",]$I_max_c +
+d[d$country=="Cyprus",]$I_max_c +
+d[d$country=="Malta",]$I_max_c +
+d[d$country=="Czechia",]$I_max_c +
+d[d$country=="Netherlands",]$I_max_c +
+d[d$country=="Denmark",]$I_max_c +
+d[d$country=="Poland",]$I_max_c +
+d[d$country=="Estonia",]$I_max_c +
+d[d$country=="Portugal",]$I_max_c +
+d[d$country=="Finland",]$I_max_c +
+d[d$country=="Romania",]$I_max_c +
+d[d$country=="France",]$I_max_c +
+d[d$country=="Slovakia",]$I_max_c +
+d[d$country=="Germany",]$I_max_c +
+d[d$country=="Slovenia",]$I_max_c +
+d[d$country=="Greece",]$I_max_c +
+d[d$country=="Spain",]$I_max_c +
+d[d$country=="Hungary",]$I_max_c +
+d[d$country=="Sweden",]$I_max_c +
+d[d$country=="Ireland",]$I_max_c
+
+EU_current =
+d[d$country=="Austria",]$cum_cases +
+d[d$country=="Italy",]$cum_cases +
+d[d$country=="Belgium",]$cum_cases +
+d[d$country=="Latvia",]$cum_cases +
+d[d$country=="Bulgaria",]$cum_cases +
+d[d$country=="Lithuania",]$cum_cases +
+d[d$country=="Croatia",]$cum_cases +
+d[d$country=="Luxembourg",]$cum_cases +
+d[d$country=="Cyprus",]$cum_cases +
+d[d$country=="Malta",]$cum_cases +
+d[d$country=="Czechia",]$cum_cases +
+d[d$country=="Netherlands",]$cum_cases +
+d[d$country=="Denmark",]$cum_cases +
+d[d$country=="Poland",]$cum_cases +
+d[d$country=="Estonia",]$cum_cases +
+d[d$country=="Portugal",]$cum_cases +
+d[d$country=="Finland",]$cum_cases +
+d[d$country=="Romania",]$cum_cases +
+d[d$country=="France",]$cum_cases +
+d[d$country=="Slovakia",]$cum_cases +
+d[d$country=="Germany",]$cum_cases +
+d[d$country=="Slovenia",]$cum_cases +
+d[d$country=="Greece",]$cum_cases +
+d[d$country=="Spain",]$cum_cases +
+d[d$country=="Hungary",]$cum_cases +
+d[d$country=="Sweden",]$cum_cases +
+d[d$country=="Ireland",]$cum_cases
+
+EU_future = EU_max - EU_current
+
+row = data.frame(country="_European Union_", 
+                 current= EU_current, future=EU_future, 
+                 max = EU_max)
+df = rbind(df, row)
+```
+# Analysis
+
+
+```{r, echo=F, messages=F, warnings=F }
+library(vistime)
+fig = vistime(data.frame(Country=converged$country,event=converged$country,start=(as.Date(converged$first_case_date)+converged$t_max-1)), optimize_y = F, groups="Country", linewidth=10, show_labels=F, title="Peak in Country")
+
+
+library(plotly)
+
+fig <- fig %>% layout(autosize = F, width = 1000, height =1500)
+
+fig
+
+```
+
+# Correlation
+
+```{r, echo=F }
+
+plot(converged$beta_c, converged$alpha_c, xlab="Inflection in Time", ylab="Strength of growth",  log="x")
+text(converged$beta_c, converged$alpha_c, labels=converged$country, pos=4)
+```
+
+Correlation of growth and duration: `r cor(converged$t_max, converged$alpha_i)`
+
+```{r}
+# install.packages("caret")
+library(caret)
+preproc = preProcess(converged)
+norm = predict(preproc, converged)
+dist = dist(norm, method="euclidian")
+hc = hclust(dist, method="ward.D")
+# plot(hc)
+clusters = cutree(hc, k=4)
+table(clusters)
+c1 = subset(converged, clusters==1)
+c1$country 
+# c1: Small countries successfull fighting quickly
+c2 = subset(converged, clusters==2)
+c2$country 
+# c2: Very small countries successfull fighting quickly
+c3 = subset(converged, clusters==3)
+c3$country 
+# c3: Misc.
+c4 = subset(converged, clusters==4)
+c4$country 
+# c4: Large countries
+```
+
+```{r, echo=F }
+plot(c1$beta_c, c1$alpha_c, xlab="Infection in Time", ylab="Strength of growth", log="y")
+text(c1$beta_c, c1$alpha_c, labels=c1$country, pos=4)
+
+plot(c2$beta_c, c2$alpha_c, xlab="Infection in Time", ylab="Strength of growth", log="y")
+text(c2$beta_c, c2$alpha_c, labels=c2$country, pos=4)
+
+plot(c3$beta_c, c3$alpha_c, xlab="Infection in Time", ylab="Strength of growth", log="y")
+text(c3$beta_c, c3$alpha_c, labels=c3$country, pos=4)
+
+plot(c4$beta_c, c4$alpha_c, xlab="Infection in Time", ylab="Strength of growth", log="y")
+text(c4$beta_c, c4$alpha_c, labels=c4$country, pos=4)
+
+```
+
+From https://www.cidrap.umn.edu/sites/default/files/public/downloads/cidrap-covid19-viewpoint-part1.pdf
+average incubation period for COVID-19 is 5 days (range, 2 to 14 days) (Lauer 2020). The longer incubation period for COVID-19 allowed the virus to move silently in different populations before being detected (Kahn 2020, Li 2020). This contributed to an initial environment of complacency before national governments became aware of the severity of the situation
+The second important factor is the asymptomatic fraction for the two infections. Although information is still being collected to definitively define the asymptomatic fraction for COVID-19, public health officials have stated that 25% of all cases may be asymptomatic (Rettner 2020) and better serologic studies may revise this percentage upward. A number of studies have explored the asymptomatic fraction for influenza; one review found a pooled mean for the asymptomatic fraction of 16% (range of 4% to 28%) (Leung 2015). Thus, while both viruses can lead to asymptomatic infections, the asymptomatic fraction appears to be somewhat higher for COVID-19 than for influenza
+
+Another consideration is the timeframe of presymptomatic viral shedding for people who fall ill. One recent study found that the SARS-CoV-2 viral load was highest at the time of symptom onset, suggesting that viral shedding may peak before symptoms occur, leading to substantial presymptomatic transmission (He 2020). A point-prevalence study of SARS-CoV-2 in nursing home residents showed that, for 27 residents who were asymptomatic at the time of testing, 24 developed symptoms a median of 4 days later (interquartile range, 3 to 5 days) (Arons 2020), supporting the potential for several days of presymptomatic shedding. For the H1N1 pandemic influenza 

@@ -11,7 +11,7 @@
 #
 # Use country from build script parameter, or default to a country (second parameter)
 ################# DEBUG WITH COUNTRY NAME *********************
-DEBUG_COUNTRY = "Germany"
+DEBUG_COUNTRY = "US"
 ################# DEBUG WITH A COUNTRY NAME *********************
 #
 #
