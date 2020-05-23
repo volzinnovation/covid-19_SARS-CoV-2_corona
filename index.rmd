@@ -36,11 +36,13 @@ link = paste0("[",converged$country,"](https://www.volzinnovation.com/covid-19_S
 df = data.frame(country=link, current=converged$cum_cases, 
 future=converged$I_max_c -converged$cum_cases,
 max=converged$I_max_c,
-percapita=converged$PopulationInThousands)
+percapita=converged$PopulationInThousands,
+                endemic=converged$I_final_d)
 
 df$future = ifelse(df$future>0,df$future,0)
 df$max = ifelse(df$future==0,df$current,df$max)
-df$percapita = round(df$max/df$percapita/10, digits=2)
+df$percapita = round(ifelse(df$current>=df$max, df$current, df$max)/df$percapita/10, digits=2)
+df$ended = ifelse(df$future <= df$endemic,1,0)
 ```
 
 # Fast Facts
@@ -55,21 +57,40 @@ df$percapita = round(df$max/df$percapita/10, digits=2)
 
 * Assuming 7.5% case fatality rate the pandemic kills at least **`r format(round(sum(converged$I_max_c *0.075 ), digits=0), big.mark=",")`** people in those countries.
 
+# First Wave Ended 
 
-# Projections for Countries
-
-Follow the link for country specific reports. 
+SARS-CoV-2 is now endemic in the following countries:
 
 ```{r, echo=F}
-kable(df,     
+ended = subset(df, ended==1)
+ended$future = ended$endemic
+ended$ended = NULL
+ended$endemic = NULL
+ended$max = NULL
+kable(ended, 
       format.args = list(big.mark = ",",scientific = FALSE),
-     col.names=c("Country", "Current Cases", "Future Cases (1)", "Total Cases", "Infected Population % (2)"))
+      col.names=c("Country", "Reported Case Total", "Expected New Cases/Day", "Infected Population % (1)" ))
 ```
+
+# First Wave Ongoing
+
+The following countries are still in the first wave of the COVID-19 pandemic.
+
+```{r, echo=F}
+active = subset(df, ended==0)
+active$ended = NULL
+active$endemic = NULL
+kable(active,
+      format.args = list(big.mark = ",",scientific = FALSE),
+    col.names=c("Country", "Reported Cases", "Expected Additional Cases In First Wave", "Expected Total Cases For First Wave", "Infected Population % (1)"))
+```
+
 _Notes:_
 
-1. If future cases are 0, the first wave has ended in the country according to our model and the virus is now in an endemic phase, where new cases will pop up and need to be handled efficiently.
+1. Infected Population refers to the share of reported cases wrt. total population of the country and does not include patients that were not reported or asymptomatic. 
 
-2. Infected Population refers to the share of reported cases wrt. total population of the country and does not include patients that were not reported or asymptomatic. 
+2. If future cases are 0, the first wave has ended in the country according to our model and the virus is now in an endemic phase, where new cases will pop up and need to be handled efficiently.
+
 
 We could not yet find *reliable* models countries that are not listed above, but we are updating the list and our assessment on a daily basis.
 
