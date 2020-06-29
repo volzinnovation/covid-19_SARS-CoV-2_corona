@@ -11,7 +11,7 @@
 #
 # Use country from build script parameter, or default to a country (second parameter)
 ################# DEBUG WITH COUNTRY NAME *********************
-DEBUG_COUNTRY = "US"
+DEBUG_COUNTRY = "Germany"
 ################# DEBUG WITH A COUNTRY NAME *********************
 #
 #
@@ -431,6 +431,7 @@ for (date in DE$Date) {
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
+abline(v=as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")), lty=4, col="orange")
 # add asymptote I_final_d
 abline(h=doubleSigmoidalModel$endDeclinePoint_y, lty=2, lwd=2, col="orange")
 # add points for reported data
@@ -451,7 +452,7 @@ Since the model requires six parameters, it also requires more data points. Henc
 | $t_{max}$ Peak day                   | `r DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1]` (Day `r round(doubleSigmoidalModel$maximum_x, digits=0)`)     | `r DE$Date[round(dsm_ago$maximum_x, digits=0)][1]` (Day `r round(dsm_ago$maximum_x, digits=0)`)                  | `r round(doubleSigmoidalModel$maximum_x, digits=0) - round(dsm_ago$maximum_x, digits=0)`      |
 | $\alpha_{d}$ Slope of decay phase       | `r round(doubleSigmoidalModel$slope2Param_Estimate, digits=2)`                                                             | `r round(dsm_ago$slope2Param_Estimate, digits=2)`                                                             | `r round(doubleSigmoidalModel$slope2Param_Estimate - dsm_ago$slope2Param_Estimate, digits=2)` |
 | $t_{d}$ Midpoint of decay phase | `r DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1]` (Day `r round(doubleSigmoidalModel$midPoint2_x, digits=0)`) | `r DE$Date[round(dsm_ago$midPoint2_x, digits=0)][1]` (Day `r round(dsm_ago$midPoint2_x, digits=0)`)              | `r round(doubleSigmoidalModel$midPoint2_x, digits=0) -round(dsm_ago$midPoint2_x, digits=0)`   |
-
+| End of first wave | `r as.Date(round(doubleSigmoidalModel$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d"))` (Day `r round(doubleSigmoidalModel$midPoint2_x * 2, digits=0)`) | `r as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d"))` (Day `r round(dsm_ago$midPoint2_x * 2, digits=0)`)              | `r round(doubleSigmoidalModel$midPoint2_x * 2, digits=0) -round(dsm_ago$midPoint2_x * 2, digits=0)`   |
 In order to address the shortcoming of model instability under new data `r ifelse(I_max_dsm>0, " and the situation that no decay could be detected yet","")`, we can attempt to fit a different model working with cumulative case numbers instead.
 
 # Cumulative cases
@@ -478,6 +479,8 @@ for (date in DE$Date) {
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
+
+abline(v=as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")), lty=4, col="orange")
 # plot Gompertz model
 lines(DE$Date, new_gomp, col="red", lwd=2)
 # plot DSM model
@@ -551,6 +554,8 @@ for (date in DE$Date) {
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
+
+abline(v=as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")), lty=4, col="orange")
 # Add line when model converged
 # (v=DE$Date[convergent], lty=2, lwd=2, col="green")
 ```
@@ -637,6 +642,8 @@ for (date in DE$Date) {
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
+
+abline(v=as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")), lty=4, col="orange")
 ```
 
 ```{r evol-alpha, fig.cap="Parameter evolution of growth rate (alpha_c)", echo=FALSE}
@@ -656,6 +663,8 @@ for (date in DE$Date) {
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
+
+abline(v=as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")), lty=4, col="orange")
 ```
 
 ```{r evol-beta, fig.cap="Parameter evolution of time shift (beta_c)", echo=FALSE}
@@ -676,6 +685,8 @@ for (date in DE$Date) {
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
+
+abline(v=as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")), lty=4, col="orange")
 ```
 
 # Source code for model estimation
