@@ -11,7 +11,7 @@
 #
 # Use country from build script parameter, or default to a country (second parameter)
 ################# DEBUG WITH COUNTRY NAME *********************
-DEBUG_COUNTRY = "Germany"
+DEBUG_COUNTRY = "Austria"
 ################# DEBUG WITH A COUNTRY NAME *********************
 #
 #
@@ -223,6 +223,10 @@ I_max_d = round(doubleSigmoidalModel$reachMaximum_y, digits=0)
 I_max_c = gomp$m$getAllPars()["a"]
 beta_c = gomp$m$getAllPars()["b"]
 alpha_c = gomp$m$getAllPars()["c"]
+# Calculate pragmatic end
+p_d = 0.99 # Point where x% of decrease have happened
+t_p_d = log (1 / p_d - 1, base = exp(1)) / - doubleSigmoidalModel$slope2Param_Estimate + doubleSigmoidalModel$midPoint2_x
+
 # Check whether a maximum can be found for the DSM model
 I_max_dsm = ifelse( ( a_d > 0 ) && ( I_final_d < 0.5 * I_max_d ),  
                     new_dsm_cum[ t_max ] +  2 * ( new_dsm_cum[t_d] - new_dsm_cum[ t_max ]) , -1 ) # not really fixed asymptote, -1 if there is no recovery yet
@@ -364,7 +368,9 @@ d = data.frame(
   assessment=c(assessment)  
 )
 write.table(d, file = "../models/history.csv", sep = ",", col.names = F, row.names=F, append = T, qmethod = "double")
-
+endtext = paste0("The first wave has ended in ", countryname, " on ", as.Date(round(t_p_d, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")) , " (Day ", round(t_p_d,digits=0), ").")
+endday =  round(t_p_d, digits=0)
+enddate= as.Date(endday, origin=format(DE$Date[1],"%Y-%m-%d"))
 ```
 
 ---
@@ -374,7 +380,8 @@ date: Last updated on `r Sys.Date()`
 output: bookdown::html_document2
 ---
 
-_**Executive Summary:** We expect a total of `r format(round(I_max_c, digits=0), big.mark = ",", digits=0)` cases in the first wave of the COVID-19 pandemic in `r countryname`, this is an additional `r format(ifelse((I_max_c - last_confirmed > 0),(I_max_c - last_confirmed),0), big.mark=",")` cases compared to current case total. New cases have peeked on `r DE$Date[t_max][1]` with `r format(I_max_d, big.mark=",")` new cases. Our models assume that after end of the current wave around `r format(I_final_d, big.mark=",")` new cases will appear on an average day, since SARS-CoV-2 is now endemic. Quick, effective, and differentiated mitigation measures need to be in place to prevent a new outbreak._
+_**Executive Summary:** 
+`r ifelse(t_p_d<=nrow(DE),endtext,"")` We expect a total of `r format(round(I_max_c, digits=0), big.mark = ",", digits=0)` cases in the first wave of the COVID-19 pandemic in `r countryname`, this is an additional `r format(ifelse((I_max_c - last_confirmed > 0),(I_max_c - last_confirmed),0), big.mark=",")` cases compared to current case total. New cases have peeked on `r DE$Date[t_max][1]` with `r format(I_max_d, big.mark=",")` new cases. Our models assume that after end of the current wave around `r format(I_final_d, big.mark=",")` new cases will appear on an average day, since SARS-CoV-2 is now endemic. Quick, effective, and differentiated mitigation measures need to be in place to prevent a new outbreak._
 
 
 # New Cases
@@ -416,7 +423,7 @@ $$\begin{aligned}f_{d}(t) = \left\{
 \end{array} \right.
 \end{aligned}$$
 
-where $t_{i}$ is the midpoint and $\alpha_{i}$ the slope of the increase of cases and $t_{d}$ is the midpoint and $\alpha_{d}$ is the slope of the decrease in cases. $I_{max_{d}}$ the peak of new cases and $I_{final_{d}}$ the asymptotic final value of new cases at the end of the infections wave. Figure \@ref(fig:daily-model) shows the current _double-sigmoidal model_ ( orange line) that is fitted for the new case time series of `r countryname`, where the vertical dashed line highlights the midpoint $t_i$ of the growth phase, the vertical solid line indicates the peak of new infections $t_max$ and the vertical dotted line the midpoint $t_d$ of the decay phase. The dashed horizontal line marks the estimated asymptote of endemic new cases $I_{final_{d}}$ as this infection wave ends. 
+where $t_{i}$ is the midpoint and $\alpha_{i}$ the slope of the increase of cases and $t_{d}$ is the midpoint and $\alpha_{d}$ is the slope of the decrease in cases. $I_{max_{d}}$ the peak of new cases and $I_{final_{d}}$ the asymptotic final value of new cases at the end of the infections wave. Figure \@ref(fig:daily-model) shows the current _double-sigmoidal model_ ( orange line) that is fitted for the new case time series of `r countryname`, where the vertical dashed line highlights the midpoint $t_i$ of the growth phase, the vertical solid line indicates the peak of new infections $t_max$ and the vertical dotted line the midpoint $t_d$ of the decay phase. The dashed horizontal line marks the estimated asymptote of endemic new cases $I_{final_{d}}$ as this infection wave ends. We pragmatically assume that the first wave ends, when `r round(p_d*100,0)` percent of the decrease has happened. The dashed green line marks this date.
 
 ```{r daily-model, fig.cap="Double sigmoidal model (DSM) for new cases.", echo=FALSE}
 
@@ -428,16 +435,23 @@ for (date in DE$Date) {
     abline(v=as.Date(date, origin="1970-01-01"), col="grey", lty=3)
 }
 # Add lines for key dates from DSM model
+#
+#
+# Midpoint of increase
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
+# Peak
 abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
+# Midpoint of decrease
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
-abline(v=as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")), lty=4, col="orange")
+# p_d Endpoint 
+abline(v=enddate, lty=4, col="green")
 # add asymptote I_final_d
 abline(h=doubleSigmoidalModel$endDeclinePoint_y, lty=2, lwd=2, col="orange")
 # add points for reported data
 points(DE$Date[seq(2,nrow(DE))],coredata(delta))
 
 ```
+
 
 ## Reliability of the DSM
 
@@ -452,11 +466,11 @@ Since the model requires six parameters, it also requires more data points. Henc
 | $t_{max}$ Peak day                   | `r DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1]` (Day `r round(doubleSigmoidalModel$maximum_x, digits=0)`)     | `r DE$Date[round(dsm_ago$maximum_x, digits=0)][1]` (Day `r round(dsm_ago$maximum_x, digits=0)`)                  | `r round(doubleSigmoidalModel$maximum_x, digits=0) - round(dsm_ago$maximum_x, digits=0)`      |
 | $\alpha_{d}$ Slope of decay phase       | `r round(doubleSigmoidalModel$slope2Param_Estimate, digits=2)`                                                             | `r round(dsm_ago$slope2Param_Estimate, digits=2)`                                                             | `r round(doubleSigmoidalModel$slope2Param_Estimate - dsm_ago$slope2Param_Estimate, digits=2)` |
 | $t_{d}$ Midpoint of decay phase | `r DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1]` (Day `r round(doubleSigmoidalModel$midPoint2_x, digits=0)`) | `r DE$Date[round(dsm_ago$midPoint2_x, digits=0)][1]` (Day `r round(dsm_ago$midPoint2_x, digits=0)`)              | `r round(doubleSigmoidalModel$midPoint2_x, digits=0) -round(dsm_ago$midPoint2_x, digits=0)`   |
-| End of first wave | `r as.Date(round(doubleSigmoidalModel$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d"))` (Day `r round(doubleSigmoidalModel$midPoint2_x * 2, digits=0)`) | `r as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d"))` (Day `r round(dsm_ago$midPoint2_x * 2, digits=0)`)              | `r round(doubleSigmoidalModel$midPoint2_x * 2, digits=0) -round(dsm_ago$midPoint2_x * 2, digits=0)`   |
-In order to address the shortcoming of model instability under new data `r ifelse(I_max_dsm>0, " and the situation that no decay could be detected yet","")`, we can attempt to fit a different model working with cumulative case numbers instead.
+| First wave ends | `r enddate` (Day `r endday`) | `r enddate` (Day `r endday`)              | 0   |
+
+
 
 # Cumulative cases
-
 The cumulative total of COVID-19 cases in `r countryname` is the number of all COVID-19 cases known up to yesterday and **includes all patients already recovered from the infection**. This corresponds to the _Infected (I)_ number in the standard epidemiological SIR model. Figure \@ref(fig:cumulative-plot) shows the data points of the time series together with a Gompertz model for the cumulative cases (red line) as well as the cumulated double-sigmoidal model (orange line). The dashed horizontal lines show the expected maximum number of cases of the `r ifelse(I_max_dsm>0,"respective models", "Gompertz model ( the cumulated double-sigmoidal model does not have an asymptote )")`. `r ifelse(I_final_d>0 && I_max_dsm>0 ,paste0(" _Note:_ The cumulated double-sigmoidal model does not have an asymptote, since $I_{final_{d}}$ is not zero, the line can be considered as the number of infections when the infective wave ends and the endemic state starts. "),"" )`
 
 
@@ -480,7 +494,8 @@ abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, c
 abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
 
-abline(v=as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")), lty=4, col="orange")
+# p_d Endpoint 
+abline(v=enddate, lty=4, col="green")
 # plot Gompertz model
 lines(DE$Date, new_gomp, col="red", lwd=2)
 # plot DSM model
@@ -555,7 +570,8 @@ abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, c
 abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
 
-abline(v=as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")), lty=4, col="orange")
+# p_d Endpoint 
+abline(v=enddate, lty=4, col="green")
 # Add line when model converged
 # (v=DE$Date[convergent], lty=2, lwd=2, col="green")
 ```
@@ -643,7 +659,8 @@ abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, c
 abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
 
-abline(v=as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")), lty=4, col="orange")
+# p_d Endpoint 
+abline(v=enddate, lty=4, col="green")
 ```
 
 ```{r evol-alpha, fig.cap="Parameter evolution of growth rate (alpha_c)", echo=FALSE}
@@ -663,8 +680,8 @@ for (date in DE$Date) {
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
-
-abline(v=as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")), lty=4, col="orange")
+# p_d Endpoint 
+abline(v=enddate, lty=4, col="green")
 ```
 
 ```{r evol-beta, fig.cap="Parameter evolution of time shift (beta_c)", echo=FALSE}
@@ -685,8 +702,8 @@ for (date in DE$Date) {
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint1_x, digits=0)][1], lty=2, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$maximum_x, digits=0)][1], lty=1, col="orange")
 abline(v=DE$Date[round(doubleSigmoidalModel$midPoint2_x, digits=0)][1], lty=3, col="orange")
-
-abline(v=as.Date(round(dsm_ago$midPoint2_x * 2, digits=0), origin=format(DE$Date[1],"%Y-%m-%d")), lty=4, col="orange")
+# p_d Endpoint 
+abline(v=enddate, lty=4, col="green")
 ```
 
 # Source code for model estimation
