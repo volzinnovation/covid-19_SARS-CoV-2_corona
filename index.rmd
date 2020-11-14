@@ -1,13 +1,12 @@
 ---
 title: "Projections for the Covid-19 pandemic"
 author: Raphael Volz (rv@volzinnovation.com)
-date: Last updated on `r Sys.Date()`
 output: bookdown::html_document2
 params:
 country: Germany
 ---
 
-Please note that this project was made for one wave predictions only. Since we have multiple waves of COVID-19 infections around the globe, our models currently provide no reliable predictions. We are working on models for infections with several waves.
+Please note that this project was created for one wave predictions only. **Since we have multiple waves of COVID-19 infections around the globe, our models currently provide no reliable predictions.** But, we are working on models for several waves of infections.
 
 ```{r , echo=F  , messages=F, warning=F, include=F}
 library(stringr)
