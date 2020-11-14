@@ -7,6 +7,7 @@ params:
 country: Germany
 ---
 
+Please note that this project was made for one wave predictions only. Since we have multiple waves of COVID-19 infections around the globe, our models currently provide no reliable predictions. We are working on models for infections with several waves.
 
 ```{r , echo=F  , messages=F, warning=F, include=F}
 library(stringr)
@@ -14,87 +15,23 @@ library(knitr)
 library(DT)
 library(dplyr)
 p = read.csv("population.csv")
-
 d = read.csv("models/history.csv")
+```
+        
+**Disclaimer:** This is preliminary research provided on a timely basis for information only. It is not intended as commercial, legal, medical, financial or political advice.
+
+# Interim results per country
+
+```{r , messages=F, warning=F, echo=F}
 last_d = d$date[nrow(d)]
-last_d
 d = subset(d, date == last_d)
 d = merge(d, p, by.x="country", by.y="Country", sort = TRUE)
-
-
 d = distinct(d, country,  .keep_all = TRUE)
-# str(d)
-# Choose only those with true assessment
-#converged = subset(d,  assessment == TRUE)
-#converged = subset(converged,I_max_c <=1000000)
-converged = subset(d,(I_max_c - cum_cases) < cum_cases )
-#converged = subset(d,  t_convergence > 0)
-#
-filename = str_replace_all(converged$country, c(" "="","\\*"="","US"="USA","'"=""))
-link = paste0("[",converged$country,"](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/",filename,".html)")
+filename = str_replace_all(d$country, c(" "="","\\*"="","US"="USA","'"=""))
+d$link = paste0("[",d$country,"](https://www.volzinnovation.com/covid-19_SARS-CoV-2_corona/reports/latest/",filename,".html)")
+kable(d$link, col.names=c("Country"))
 
-df = data.frame(country=link, current=converged$cum_cases, 
-future=converged$I_max_c -converged$cum_cases,
-max=converged$I_max_c,
-percapita=converged$PopulationInThousands,
-                endemic=converged$I_final_d)
-
-df$future = ifelse(df$future>0,df$future,0)
-df$max = ifelse(df$future==0,df$current,df$max)
-df$percapita = round(ifelse(df$current>=df$max, df$current, df$max)/df$percapita/10, digits=2)
-df$ended = ifelse(df$future <= df$endemic,1,0)
 ```
-
-# Fast Facts
-
-* Reliable forecasts can be currently be found for  `r nrow(converged)` (out of `r nrow(d)`) countries that have reported COVID-19 cases according to the [Johns Hopkins University data set](https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/).
-
-* Those models have predicted the last known cases for an average of  `r round(mean(converged$day - converged$t_convergence), digits=0) ` days ahead.
-
-* An additional **`r format(sum(converged$I_max_c) - sum(converged$cum_cases), digits=0, big.mark=",")`** new cases will appear in the next days and weeks in those countries.
-
-* Their total will be at least  **`r format(sum(converged$I_max_c), digits=0, big.mark=",")`** cases based on the estimates for the countries listed below.
-
-* Assuming 7.5% case fatality rate the pandemic kills at least **`r format(round(sum(converged$I_max_c *0.075 ), digits=0), big.mark=",")`** people in those countries.
-
-# First Wave Ended 
-
-SARS-CoV-2 is now endemic in the following countries:
-
-```{r, echo=F}
-ended = subset(df, ended==1)
-ended$future = ended$endemic
-ended$ended = NULL
-ended$endemic = NULL
-ended$max = NULL
-kable(ended, 
-      format.args = list(big.mark = ",",scientific = FALSE),
-      col.names=c("Country", "Reported Case Total", "Expected New Cases/Day", "Infected Population % (1)" ))
-```
-
-# First Wave Ongoing
-
-The following countries are still in the first wave of the COVID-19 pandemic.
-
-```{r, echo=F}
-active = subset(df, ended==0)
-active$ended = NULL
-active$endemic = NULL
-kable(active,
-      format.args = list(big.mark = ",",scientific = FALSE),
-    col.names=c("Country", "Reported Cases", "Expected Additional Cases In First Wave", "Expected Total Cases For First Wave", "Infected Population % (1)"))
-```
-
-_Notes:_
-
-1. Infected Population refers to the share of reported cases wrt. total population of the country and does not include patients that were not reported or asymptomatic. 
-
-2. If future cases are 0, the first wave has ended in the country according to our model and the virus is now in an endemic phase, where new cases will pop up and need to be handled efficiently.
-
-
-We could not yet find *reliable* models countries that are not listed above, but we are updating the list and our assessment on a daily basis.
-
-**Disclaimer:** This is preliminary research provided on a timely basis for information only. It is not intended as commercial, legal, medical, financial or political advice.
 
 # Frequently Asked Question (FAQ)
 
